@@ -14,6 +14,10 @@ import MobileContactBar from '@/components/property/MobileContactBar';
 import SimilarProperties from '@/components/property/SimilarProperties';
 import ContactForm from '@/components/property/ContactForm';
 import Badge from '@/components/ui/Badge';
+import StickyBar from '@/components/property/StickyBar';
+import Highlights from '@/components/property/Highlights';
+import Proximity from '@/components/property/Proximity';
+import PriceTimeline from '@/components/property/PriceTimeline';
 
 interface PropertyPageContentProps {
   property: Property;
@@ -32,6 +36,7 @@ export default function PropertyPageContent({ property, similar, locale }: Prope
 
   return (
     <div className="pb-24 md:pb-16">
+      <StickyBar property={property} />
       {/* Breadcrumbs */}
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-3">
         <nav className="flex items-center gap-1 text-xs text-gray-500">
@@ -137,19 +142,22 @@ export default function PropertyPageContent({ property, similar, locale }: Prope
               </button>
             </div>
 
+            <Highlights property={property} />
             <PropertySpecs property={property} />
+            <PriceTimeline property={property} />
             <FinancialSimulator property={property} />
 
-            {/* Location placeholder */}
+            {/* Location & Proximity */}
             <div>
               <h2 className="text-xl font-bold text-[#2C2C2C] mb-3">{t('location')}</h2>
-              <div className="bg-[#F4F6F8] rounded-xl h-56 flex items-center justify-center">
+              <div className="bg-[#F4F6F8] rounded-xl h-56 flex items-center justify-center mb-5">
                 <div className="text-center text-gray-400">
                   <MapPin size={32} className="mx-auto mb-2" />
                   <p className="font-medium">{property.location.zone}, {property.location.city}</p>
                   <p className="text-xs mt-1">{property.location.address}</p>
                 </div>
               </div>
+              <Proximity city={property.location.city} zone={property.location.zone} />
             </div>
 
             <div>
