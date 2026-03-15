@@ -2,18 +2,21 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, X, Camera } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { ChevronLeft, ChevronRight, X, Camera, Move3D, Play } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import type { PropertyMedia } from '@/types/property';
 
 interface ImageGalleryProps {
   images: string[];
   alt: string;
+  media?: PropertyMedia;
 }
 
-export default function ImageGallery({ images, alt }: ImageGalleryProps) {
+export default function ImageGallery({ images, alt, media }: ImageGalleryProps) {
   const [current, setCurrent] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const t = useTranslations('property');
+  const locale = useLocale();
 
   const prev = useCallback(() => setCurrent(i => (i === 0 ? images.length - 1 : i - 1)), [images.length]);
   const next = useCallback(() => setCurrent(i => (i === images.length - 1 ? 0 : i + 1)), [images.length]);
@@ -64,13 +67,36 @@ export default function ImageGallery({ images, alt }: ImageGalleryProps) {
           </div>
         )}
 
-        <button
-          onClick={(e) => { e.stopPropagation(); setLightbox(true); }}
-          className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white/95 hover:bg-white text-[#2C2C2C] text-sm font-semibold rounded-lg shadow-md backdrop-blur-sm transition-colors"
-        >
-          <Camera size={16} />
-          {t('photoCount', { count: images.length })}
-        </button>
+        {/* Action pills */}
+        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+          {media?.virtualTour && (
+            <a
+              href="#virtual-tour"
+              onClick={(e) => { e.stopPropagation(); }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white/95 hover:bg-white text-[#2C2C2C] text-sm font-semibold rounded-lg shadow-md backdrop-blur-sm transition-colors"
+            >
+              <Move3D size={14} className="text-[#00B4C8]" />
+              {locale === 'es' ? 'Tour 360°' : '360° Tour'}
+            </a>
+          )}
+          {media?.video && (
+            <a
+              href="#video"
+              onClick={(e) => { e.stopPropagation(); }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white/95 hover:bg-white text-[#2C2C2C] text-sm font-semibold rounded-lg shadow-md backdrop-blur-sm transition-colors"
+            >
+              <Play size={14} className="text-[#F5A623]" fill="#F5A623" />
+              Video
+            </a>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox(true); }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/95 hover:bg-white text-[#2C2C2C] text-sm font-semibold rounded-lg shadow-md backdrop-blur-sm transition-colors"
+          >
+            <Camera size={14} />
+            {t('photoCount', { count: images.length })}
+          </button>
+        </div>
       </div>
 
       {/* Lightbox */}

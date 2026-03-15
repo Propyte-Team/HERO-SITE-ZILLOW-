@@ -40,6 +40,11 @@ export type PropertyStage = 'preventa' | 'construccion' | 'entrega_inmediata';
 export type PropertyUsage = 'residencial' | 'vacacional' | 'renta' | 'mixto';
 export type PropertyBadge = 'preventa' | 'nuevo' | 'entrega_inmediata' | null;
 
+export interface PropertyMedia {
+  virtualTour?: string;   // URL to 360° tour (Matterport, Kuula, etc.)
+  video?: string;         // YouTube/Vimeo embed URL
+}
+
 export interface Property {
   id: string;
   slug: string;
@@ -52,6 +57,7 @@ export interface Property {
   usage: PropertyUsage[];
   amenities: string[];
   images: string[];
+  media?: PropertyMedia;
   roi: PropertyROI;
   financing: PropertyFinancing;
   description: PropertyDescription;

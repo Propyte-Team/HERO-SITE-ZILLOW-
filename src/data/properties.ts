@@ -34,6 +34,10 @@ export const properties: Property[] = [
     usage: ['vacacional', 'renta'],
     amenities: ['Alberca', 'Rooftop', 'Yoga Deck', 'Bicicletas', 'Seguridad 24/7'],
     images: [IMG.house1, IMG.interior1, IMG.resort2, IMG.aerial1],
+    media: {
+      virtualTour: 'https://my.matterport.com/show/?m=SxQL3iGyvok',
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 12, rentalMonthly: 18_000, appreciation: 10 },
     financing: { downPaymentMin: 30, months: [6, 12, 18, 24], interestRate: 0 },
     description: {
@@ -65,6 +69,10 @@ export const properties: Property[] = [
     usage: ['residencial', 'vacacional', 'renta'],
     amenities: ['Alberca', 'Rooftop', 'Gym', 'Coworking', 'Seguridad 24/7'],
     images: [IMG.house2, IMG.interior2, IMG.resort1, IMG.bedroom1, IMG.aerial1],
+    media: {
+      virtualTour: 'https://my.matterport.com/show/?m=SxQL3iGyvok',
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 11, rentalMonthly: 28_000, appreciation: 9 },
     financing: { downPaymentMin: 30, months: [6, 12, 18, 24, 36], interestRate: 0 },
     description: {
@@ -96,6 +104,10 @@ export const properties: Property[] = [
     usage: ['residencial', 'vacacional', 'renta'],
     amenities: ['Alberca privada', 'Rooftop', 'Gym', 'Coworking', 'Concierge', 'Seguridad 24/7'],
     images: [IMG.luxury1, IMG.modern1, IMG.interior1, IMG.resort2, IMG.aerial1],
+    media: {
+      virtualTour: 'https://my.matterport.com/show/?m=SxQL3iGyvok',
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 13, rentalMonthly: 45_000, appreciation: 11 },
     financing: { downPaymentMin: 30, months: [6, 12, 18, 24, 36], interestRate: 0 },
     description: {
@@ -189,6 +201,9 @@ export const properties: Property[] = [
     usage: ['vacacional', 'renta'],
     amenities: ['Alberca', 'Rooftop Bar', 'Gym', 'Lobby', 'Seguridad 24/7'],
     images: [IMG.modern1, IMG.interior2, IMG.resort1, IMG.bedroom1, IMG.house1],
+    media: {
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 10, rentalMonthly: 15_000, appreciation: 8 },
     financing: { downPaymentMin: 30, months: [6, 12, 18, 24], interestRate: 0 },
     description: {
@@ -282,6 +297,10 @@ export const properties: Property[] = [
     usage: ['residencial', 'vacacional'],
     amenities: ['Alberca privada', 'Jardín', 'Terraza', 'Pet-friendly', 'Club de playa', 'Seguridad 24/7'],
     images: [IMG.luxury1, IMG.house2, IMG.interior1, IMG.resort2, IMG.bedroom1, IMG.aerial1],
+    media: {
+      virtualTour: 'https://my.matterport.com/show/?m=SxQL3iGyvok',
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 8, rentalMonthly: 40_000, appreciation: 7 },
     financing: { downPaymentMin: 30, months: [12, 18, 24, 36], interestRate: 2 },
     description: {
@@ -313,6 +332,10 @@ export const properties: Property[] = [
     usage: ['residencial', 'vacacional', 'renta'],
     amenities: ['Alberca infinity', 'Rooftop', 'Gym', 'Spa', 'Concierge', 'Vista al mar', 'Seguridad 24/7'],
     images: [IMG.luxury1, IMG.modern1, IMG.interior2, IMG.resort1, IMG.aerial1, IMG.bedroom1],
+    media: {
+      virtualTour: 'https://my.matterport.com/show/?m=SxQL3iGyvok',
+      video: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    },
     roi: { projected: 10, rentalMonthly: 65_000, appreciation: 9 },
     financing: { downPaymentMin: 30, months: [12, 18, 24, 36], interestRate: 0 },
     description: {

@@ -18,6 +18,8 @@ import StickyBar from '@/components/property/StickyBar';
 import Highlights from '@/components/property/Highlights';
 import Proximity from '@/components/property/Proximity';
 import PriceTimeline from '@/components/property/PriceTimeline';
+import VirtualTour from '@/components/property/VirtualTour';
+import VideoPlayer from '@/components/property/VideoPlayer';
 
 interface PropertyPageContentProps {
   property: Property;
@@ -52,7 +54,7 @@ export default function PropertyPageContent({ property, similar, locale }: Prope
 
       <div className="max-w-[1280px] mx-auto px-4 md:px-6">
         {/* Gallery */}
-        <ImageGallery images={property.images} alt={property.name} />
+        <ImageGallery images={property.images} alt={property.name} media={property.media} />
 
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content — 2/3 */}
@@ -143,6 +145,28 @@ export default function PropertyPageContent({ property, similar, locale }: Prope
             </div>
 
             <Highlights property={property} />
+
+            {/* Virtual Tour & Video */}
+            {(property.media?.virtualTour || property.media?.video) && (
+              <div>
+                <h2 className="text-xl font-bold text-[#2C2C2C] mb-4">
+                  {locale === 'es' ? 'Recorre la propiedad' : 'Explore the property'}
+                </h2>
+                <div className={`grid gap-4 ${property.media.virtualTour && property.media.video ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+                  {property.media.virtualTour && (
+                    <div id="virtual-tour">
+                      <VirtualTour url={property.media.virtualTour} propertyName={property.name} />
+                    </div>
+                  )}
+                  {property.media.video && (
+                    <div id="video">
+                      <VideoPlayer url={property.media.video} propertyName={property.name} thumbnail={property.images[0]} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <PropertySpecs property={property} />
             <PriceTimeline property={property} />
             <FinancialSimulator property={property} />
