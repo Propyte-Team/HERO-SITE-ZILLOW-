@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy: #1E3A5F;
+  --color-teal: #00B4C8;
+  --color-teal-dark: #009AB0;
+  --color-amber: #F5A623;
+  --color-graphite: #2C2C2C;
+  --color-gray-light: #F4F6F8;
+  --color-white: #FFFFFF;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+}
+
+@theme inline {
+  --color-navy: #1E3A5F;
+  --color-teal: #00B4C8;
+  --color-teal-dark: #009AB0;
+  --color-amber: #F5A623;
+  --color-graphite: #2C2C2C;
+  --color-gray-light: #F4F6F8;
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-whatsapp: #25D366;
+  --color-whatsapp-dark: #1EBE57;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  color: var(--color-graphite);
+  background: var(--color-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Skip to content */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  padding: 8px 16px;
+  background: var(--color-teal);
+  color: white;
+  font-weight: 600;
+}
+.skip-to-content:focus {
+  left: 0;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
