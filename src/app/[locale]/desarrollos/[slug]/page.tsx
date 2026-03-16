@@ -33,7 +33,7 @@ export async function generateStaticParams() {
       .limit(1000);
 
     if (data && data.length > 0) {
-      return [...cityParams, ...data.map(p => ({ slug: p.slug }))];
+      return [...cityParams, ...data.map((p: { slug: string }) => ({ slug: p.slug }))];
     }
   } catch {
     // Supabase not available
