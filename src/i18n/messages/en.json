@@ -734,5 +734,23 @@
   "investmentDisclaimer": {
     "default": "Projections and estimates shown are based on historical market data and do not constitute a guarantee of future performance. Consult with an advisor before making investment decisions.",
     "marketData": "Sources: estimated data based on Riviera Maya market analysis. Past returns do not guarantee future results."
+  },
+  "trustBanner": {
+    "title": "Developers who trust Propyte",
+    "comingSoon": "Coming soon: partner developers."
+  },
+  "transparency": {
+    "title": "How we operate with transparency",
+    "col1Title": "How we earn",
+    "col1Desc": "We charge a commission on sales. Our structure is clear and defined before starting the business relationship.",
+    "col2Title": "How we verify",
+    "col2Desc": "We evaluate the developer's track record, construction permits, land legal status and build progress before representing a project.",
+    "col3Title": "How we protect you",
+    "col3Desc": "Bank trust for foreign buyers, notarial support and permit verification in every transaction."
+  },
+  "referralCta": {
+    "title": "Are you a real estate broker?",
+    "subtitle": "Join our partner network with transparent commissions.",
+    "cta": "Learn about the program"
   }
 }

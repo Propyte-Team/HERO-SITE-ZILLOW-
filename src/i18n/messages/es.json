@@ -734,5 +734,23 @@
   "investmentDisclaimer": {
     "default": "Las proyecciones y estimaciones mostradas se basan en datos históricos de mercado y no constituyen garantía de rendimiento futuro. Consulta con un asesor antes de tomar decisiones de inversión.",
     "marketData": "Fuentes: datos estimados basados en análisis de mercado de la Riviera Maya. Rendimientos pasados no garantizan resultados futuros."
+  },
+  "trustBanner": {
+    "title": "Desarrolladores que confían en Propyte",
+    "comingSoon": "Próximamente: desarrolladores aliados."
+  },
+  "transparency": {
+    "title": "Cómo operamos con transparencia",
+    "col1Title": "Cómo ganamos",
+    "col1Desc": "Cobramos una comisión sobre la venta. Nuestra estructura es clara y se define antes de iniciar la relación comercial.",
+    "col2Title": "Cómo verificamos",
+    "col2Desc": "Evaluamos el historial del desarrollador, permisos de construcción, situación legal del terreno y avance de obra antes de representar un proyecto.",
+    "col3Title": "Cómo te protegemos",
+    "col3Desc": "Fideicomiso bancario para compradores extranjeros, acompañamiento notarial y verificación de permisos en cada operación."
+  },
+  "referralCta": {
+    "title": "¿Eres broker inmobiliario?",
+    "subtitle": "Únete a nuestra red de aliados con comisiones transparentes.",
+    "cta": "Conoce el programa"
   }
 }
