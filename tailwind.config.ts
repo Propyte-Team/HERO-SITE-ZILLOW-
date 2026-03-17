@@ -9,6 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        propyte: {
+          navy: '#1E3A5F',
+          teal: '#00B4C8',
+          'teal-dark': '#009AB0',
+          amber: '#F5A623',
+          graphite: '#2C2C2C',
+          light: '#F4F6F8',
+        },
+        // Keep backwards compat aliases
         navy: '#1E3A5F',
         teal: { DEFAULT: '#00B4C8', dark: '#009AB0' },
         amber: '#F5A623',
