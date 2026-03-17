@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Building2, Users, Target, BarChart3, TrendingUp, Palette, GraduationCap,
-  DollarSign, Award, ChevronDown, ChevronUp, CheckCircle, ArrowRight,
-  MessageCircle, Star, Zap, ClipboardCheck, Rocket, FileText, Shield, Crown
+  ChevronDown, ChevronUp, CheckCircle, ArrowRight,
+  MessageCircle, Zap, ClipboardCheck, Rocket, FileText, Shield
 } from 'lucide-react';
 import { submitForm } from '@/lib/submitForm';
 
@@ -43,18 +43,9 @@ function DeveloperHero() {
             </a>
           </div>
 
-          <div className="mt-12 flex flex-wrap gap-8 md:gap-12">
-            {[
-              { value: t('stat1Value'), label: t('stat1Label') },
-              { value: t('stat2Value'), label: t('stat2Label') },
-              { value: t('stat3Value'), label: t('stat3Label') },
-            ].map(stat => (
-              <div key={stat.label}>
-                <div className="text-3xl md:text-4xl font-bold text-[#5CE0D2]">{stat.value}</div>
-                <div className="text-sm text-white/50 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-8 text-base text-white/60 max-w-xl">
+            {t('heroDescriptive')}
+          </p>
         </div>
       </div>
     </section>
@@ -62,38 +53,7 @@ function DeveloperHero() {
 }
 
 // ─────────────────────────────────────────────────────
-// 2. TRUST BAR
-// ─────────────────────────────────────────────────────
-function TrustBar() {
-  const t = useTranslations('developers');
-  const stats = [
-    { icon: Building2, value: t('trustStat1Value'), label: t('trustStat1Label') },
-    { icon: Users, value: t('trustStat2Value'), label: t('trustStat2Label') },
-    { icon: DollarSign, value: t('trustStat3Value'), label: t('trustStat3Label') },
-    { icon: TrendingUp, value: t('trustStat4Value'), label: t('trustStat4Label') },
-  ];
-
-  return (
-    <section className="bg-white border-b border-gray-100">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map(({ icon: Icon, value, label }) => (
-            <div key={label} className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-[#5CE0D2]/10 rounded-xl flex items-center justify-center">
-                <Icon size={24} className="text-[#5CE0D2]" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold text-[#1A2F3F]">{value}</div>
-              <div className="text-sm text-gray-500 mt-1">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// 3. VALUE PROPOSITION
+// 2. VALUE PROPOSITION
 // ─────────────────────────────────────────────────────
 function ValueProposition() {
   const t = useTranslations('developers');
@@ -130,61 +90,18 @@ function ValueProposition() {
 }
 
 // ─────────────────────────────────────────────────────
-// 4. SERVICE TIERS
+// 3. CUSTOM PROPOSAL
 // ─────────────────────────────────────────────────────
-function ServiceTiers() {
+function CustomProposal() {
   const t = useTranslations('developers');
-  const tiers = [
-    {
-      title: t('tier1Title'), price: t('tier1Price'), desc: t('tier1Desc'),
-      icon: Building2, highlight: false,
-      features: [t('tier1Feature1'), t('tier1Feature2'), t('tier1Feature3'), t('tier1Feature4')],
-    },
-    {
-      title: t('tier2Title'), price: t('tier2Price'), desc: t('tier2Desc'),
-      icon: Zap, highlight: true,
-      features: [t('tier2Feature1'), t('tier2Feature2'), t('tier2Feature3'), t('tier2Feature4'), t('tier2Feature5')],
-    },
-    {
-      title: t('tier3Title'), price: t('tier3Price'), desc: t('tier3Desc'),
-      icon: Crown, highlight: false,
-      features: [t('tier3Feature1'), t('tier3Feature2'), t('tier3Feature3'), t('tier3Feature4'), t('tier3Feature5')],
-    },
-  ];
-
   return (
     <section className="py-16 md:py-20 bg-[#0F1923]">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">{t('tiersTitle')}</h2>
-          <p className="mt-3 text-white/50 text-lg">{t('tiersSubtitle')}</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {tiers.map(({ title, price, desc, icon: Icon, highlight, features }) => (
-            <div key={title} className={`p-8 rounded-2xl border transition-all ${highlight ? 'bg-[#5CE0D2]/10 border-[#5CE0D2]/30 scale-[1.02]' : 'bg-white/5 border-white/10 hover:border-white/20'}`}>
-              {highlight && (
-                <div className="inline-flex items-center gap-1 text-[#5CE0D2] text-xs font-bold mb-4">
-                  <Star size={14} className="fill-current" /> MAS POPULAR
-                </div>
-              )}
-              <Icon size={32} className={highlight ? 'text-[#5CE0D2] mb-3' : 'text-white/40 mb-3'} />
-              <h3 className="text-xl font-bold text-white">{title}</h3>
-              <div className="text-2xl font-bold text-[#F5A623] mt-2 mb-2">{price}</div>
-              <p className="text-white/50 text-sm mb-6">{desc}</p>
-              <ul className="space-y-3">
-                {features.map(feat => (
-                  <li key={feat} className="flex items-start gap-2 text-sm text-white/70">
-                    <CheckCircle size={16} className="text-[#5CE0D2] flex-shrink-0 mt-0.5" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-              <a href="#registro" className={`mt-6 block text-center h-12 rounded-xl font-bold text-sm flex items-center justify-center transition-all ${highlight ? 'bg-[#5CE0D2] hover:bg-[#4BCEC0] text-white' : 'bg-white/10 hover:bg-white/15 text-white'}`}>
-                {t('heroCta')} <ArrowRight size={16} className="ml-2" />
-              </a>
-            </div>
-          ))}
-        </div>
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('customProposalTitle')}</h2>
+        <p className="text-white/60 text-lg max-w-2xl mx-auto mb-8">{t('customProposalDesc')}</p>
+        <a href="#registro" className="inline-flex items-center justify-center h-14 px-8 bg-[#5CE0D2] hover:bg-[#4BCEC0] text-white font-bold text-base rounded-xl transition-all hover:shadow-lg hover:shadow-[#5CE0D2]/20 gap-2">
+          {t('customProposalCta')} <ArrowRight size={18} />
+        </a>
       </div>
     </section>
   );
@@ -227,47 +144,12 @@ function HowItWorks() {
 }
 
 // ─────────────────────────────────────────────────────
-// 6. CASE STUDIES
-// ─────────────────────────────────────────────────────
-function CaseStudies() {
-  const t = useTranslations('developers');
-  const cases = [
-    { name: t('case1Name'), type: t('case1Type'), metric: t('case1Metric'), quote: t('case1Quote') },
-    { name: t('case2Name'), type: t('case2Type'), metric: t('case2Metric'), quote: t('case2Quote') },
-    { name: t('case3Name'), type: t('case3Type'), metric: t('case3Metric'), quote: t('case3Quote') },
-  ];
-
-  return (
-    <section className="py-16 md:py-20">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-[#1A2F3F] text-center mb-12">
-          {t('caseStudyTitle')}
-        </h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {cases.map(({ name, type, metric, quote }) => (
-            <div key={name} className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-all">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={20} className="text-[#5CE0D2]" />
-                <span className="text-sm font-semibold text-gray-400 uppercase tracking-wide">{type}</span>
-              </div>
-              <h3 className="text-xl font-bold text-[#1A2F3F] mb-2">{name}</h3>
-              <div className="text-3xl font-bold text-[#F5A623] mb-4">{metric}</div>
-              <p className="text-gray-500 text-sm leading-relaxed italic">&ldquo;{quote}&rdquo;</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// 7. PLATFORM PREVIEW
+// 5. PLATFORM PREVIEW
 // ─────────────────────────────────────────────────────
 function PlatformPreview() {
   const t = useTranslations('developers');
   const features = [t('platformFeature1'), t('platformFeature2'), t('platformFeature3'), t('platformFeature4')];
-  const mockValues = ['234', '68%', '3.2x', '$180M'];
+  const mockValues = ['--', '--', '--', '--'];
 
   return (
     <section className="py-16 md:py-20 bg-[#F4F6F8]">
@@ -506,11 +388,9 @@ export default function DevelopersPageContent() {
   return (
     <div>
       <DeveloperHero />
-      <TrustBar />
       <ValueProposition />
-      <ServiceTiers />
+      <CustomProposal />
       <HowItWorks />
-      <CaseStudies />
       <PlatformPreview />
       <FAQ />
       <DeveloperForm />

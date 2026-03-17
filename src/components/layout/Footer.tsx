@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react';
+import { MapPin, Mail, Instagram, Facebook } from 'lucide-react';
 
 export default function Footer() {
   const t = useTranslations('footer');
@@ -85,10 +85,6 @@ export default function Footer() {
               <li className="flex items-start gap-2 text-sm text-white/50">
                 <MapPin size={14} className="mt-0.5 flex-shrink-0" />
                 <span>5ta Avenida, Playa del Carmen, Q.Roo</span>
-              </li>
-              <li className="flex items-center gap-2 text-sm text-white/50">
-                <Phone size={14} className="flex-shrink-0" />
-                <span>+52 984 XXX XXXX</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-white/50">
                 <Mail size={14} className="flex-shrink-0" />
