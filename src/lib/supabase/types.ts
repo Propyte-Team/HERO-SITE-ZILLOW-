@@ -12,6 +12,7 @@ export type DevRelationship = 'propio' | 'masterbroker' | 'corretaje';
 export type DealType = 'nativa_contado' | 'nativa_financiamiento' | 'macrolote' | 'corretaje' | 'masterbroker';
 export type CommissionStatus = 'pendiente' | 'facturada' | 'pagada';
 export type PlazaType = 'PDC' | 'TULUM' | 'MERIDA' | 'CANCUN' | 'OTRO';
+export type RentalType = 'residencial' | 'vacacional';
 
 // Legacy aliases for backward compat in existing components
 export type PropertyStage = DevelopmentStage;
@@ -218,6 +219,82 @@ export interface DealRow {
 }
 
 // ============================================================
+// Rental Estimate Types
+// ============================================================
+
+export interface RentalComparableRow {
+  id: string;
+  source_portal: string;
+  source_url: string | null;
+  source_id: string | null;
+  city: string;
+  zone: string | null;
+  state: string;
+  property_type: PropType;
+  rental_type: RentalType;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_m2: number | null;
+  monthly_rent_mxn: number;
+  is_furnished: boolean | null;
+  scraped_at: string;
+  listing_date: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export interface RentalEstimateRow {
+  city: string;
+  zone: string | null;
+  property_type: PropType;
+  bedrooms: number | null;
+  rental_type: RentalType;
+  sample_size: number;
+  median_rent_mxn: number;
+  avg_rent_mxn: number;
+  p25_rent_mxn: number;
+  p75_rent_mxn: number;
+  min_rent_mxn: number;
+  max_rent_mxn: number;
+  avg_rent_per_m2: number | null;
+  last_updated: string;
+}
+
+// ============================================================
+// ML Rental Estimate Types
+// ============================================================
+
+export interface RentalMlEstimateRow {
+  id: string;
+  development_id: string;
+  unit_type: PropType;
+  bedrooms: number | null;
+  estimated_rent_residencial: number;
+  estimated_rent_vacacional: number | null;
+  confidence_score: number;
+  model_version: string;
+  computed_at: string;
+}
+
+export interface DevelopmentFinancialsRow {
+  id: string;
+  development_id: string;
+  roi_annual_pct: number | null;
+  irr_5yr: number | null;
+  irr_10yr: number | null;
+  cash_on_cash_pct: number | null;
+  breakeven_months: number | null;
+  monthly_net_flow: number | null;
+  cap_rate: number | null;
+  rent_yield_gross: number | null;
+  rent_yield_net: number | null;
+  estimated_rent_residencial: number | null;
+  estimated_rent_vacacional: number | null;
+  model_version: string | null;
+  last_computed: string;
+}
+
+// ============================================================
 // Joined types (for views / common queries)
 // ============================================================
 
@@ -395,6 +472,21 @@ export interface Database {
         Insert: Partial<FactMarketingSpend> & { week_start: string; channel_id: string };
         Update: Partial<FactMarketingSpend>;
       };
+      rental_comparables: {
+        Row: RentalComparableRow;
+        Insert: Partial<RentalComparableRow> & { city: string; state: string; property_type: PropType; monthly_rent_mxn: number; source_portal: string; source_id: string };
+        Update: Partial<RentalComparableRow>;
+      };
+      rental_ml_estimates: {
+        Row: RentalMlEstimateRow;
+        Insert: Partial<RentalMlEstimateRow> & { development_id: string; unit_type: PropType; estimated_rent_residencial: number; model_version: string };
+        Update: Partial<RentalMlEstimateRow>;
+      };
+      development_financials: {
+        Row: DevelopmentFinancialsRow;
+        Insert: Partial<DevelopmentFinancialsRow> & { development_id: string };
+        Update: Partial<DevelopmentFinancialsRow>;
+      };
     };
     Views: {
       developments_with_developer: {
@@ -402,6 +494,9 @@ export interface Database {
       };
       mv_mmm_weekly: {
         Row: MvMmmWeekly;
+      };
+      rental_estimates: {
+        Row: RentalEstimateRow;
       };
     };
   };

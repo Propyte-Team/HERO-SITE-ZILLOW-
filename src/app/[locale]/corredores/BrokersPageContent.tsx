@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   Briefcase, Monitor, Brain, Percent, Palette, GraduationCap,
-  Building2, Users, DollarSign, Award, ChevronDown, ChevronUp,
-  CheckCircle, ArrowRight, MessageCircle, Star, Zap,
-  ClipboardCheck, Rocket, Handshake, BarChart3, Shield
+  Users, ChevronDown, ChevronUp,
+  CheckCircle, ArrowRight, MessageCircle, Zap,
+  ClipboardCheck, Rocket, Handshake, Shield
 } from 'lucide-react';
 import { submitForm } from '@/lib/submitForm';
 
@@ -55,19 +55,9 @@ function BrokerHero() {
             </a>
           </div>
 
-          {/* Stats */}
-          <div className="mt-12 flex flex-wrap gap-8 md:gap-12">
-            {[
-              { value: t('stat1Value'), label: t('stat1Label') },
-              { value: t('stat2Value'), label: t('stat2Label') },
-              { value: t('stat3Value'), label: t('stat3Label') },
-            ].map(stat => (
-              <div key={stat.label}>
-                <div className="text-3xl md:text-4xl font-bold text-[#5CE0D2]">{stat.value}</div>
-                <div className="text-sm text-white/50 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-8 text-base text-white/60 max-w-xl">
+            {t('heroDescriptive')}
+          </p>
         </div>
       </div>
     </section>
@@ -75,38 +65,7 @@ function BrokerHero() {
 }
 
 // ─────────────────────────────────────────────────────
-// 2. TRUST BAR
-// ─────────────────────────────────────────────────────
-function TrustBar() {
-  const t = useTranslations('brokers');
-  const stats = [
-    { icon: Building2, value: t('trustStat1Value'), label: t('trustStat1Label') },
-    { icon: Users, value: t('trustStat2Value'), label: t('trustStat2Label') },
-    { icon: DollarSign, value: t('trustStat3Value'), label: t('trustStat3Label') },
-    { icon: Award, value: t('trustStat4Value'), label: t('trustStat4Label') },
-  ];
-
-  return (
-    <section className="bg-white border-b border-gray-100">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map(({ icon: Icon, value, label }) => (
-            <div key={label} className="text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-[#5CE0D2]/10 rounded-xl flex items-center justify-center">
-                <Icon size={24} className="text-[#5CE0D2]" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold text-[#1A2F3F]">{value}</div>
-              <div className="text-sm text-gray-500 mt-1">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// 3. VALUE PROPOSITION
+// 2. VALUE PROPOSITION
 // ─────────────────────────────────────────────────────
 function ValueProposition() {
   const t = useTranslations('brokers');
@@ -179,95 +138,7 @@ function HowItWorks() {
 }
 
 // ─────────────────────────────────────────────────────
-// 5. EARNINGS POTENTIAL
-// ─────────────────────────────────────────────────────
-function EarningsPotential() {
-  const t = useTranslations('brokers');
-  const tiers = [
-    { title: t('tier1Title'), range: t('tier1Range'), desc: t('tier1Desc'), icon: Users, highlight: false },
-    { title: t('tier2Title'), range: t('tier2Range'), desc: t('tier2Desc'), icon: Building2, highlight: true },
-    { title: t('tier3Title'), range: t('tier3Range'), desc: t('tier3Desc'), icon: BarChart3, highlight: false },
-  ];
-
-  return (
-    <section className="py-16 md:py-20 bg-[#0F1923]">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">{t('earningsTitle')}</h2>
-          <p className="mt-3 text-white/50 text-lg">{t('earningsSubtitle')}</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {tiers.map(({ title, range, desc, icon: Icon, highlight }) => (
-            <div
-              key={title}
-              className={`p-8 rounded-2xl border transition-all ${
-                highlight
-                  ? 'bg-[#5CE0D2]/10 border-[#5CE0D2]/30 scale-[1.02]'
-                  : 'bg-white/5 border-white/10 hover:border-white/20'
-              }`}
-            >
-              <Icon size={32} className={highlight ? 'text-[#5CE0D2] mb-4' : 'text-white/40 mb-4'} />
-              <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-              <div className="text-3xl font-bold text-[#F5A623] mb-4">{range}</div>
-              <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
-              {highlight && (
-                <div className="mt-4 inline-flex items-center gap-1 text-[#5CE0D2] text-sm font-semibold">
-                  <Star size={14} className="fill-current" /> Most popular
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// 6. TESTIMONIALS
-// ─────────────────────────────────────────────────────
-function Testimonials() {
-  const t = useTranslations('brokers');
-  const testimonials = [
-    { name: t('testimonial1Name'), role: t('testimonial1Role'), quote: t('testimonial1Quote'), initial: 'C' },
-    { name: t('testimonial2Name'), role: t('testimonial2Role'), quote: t('testimonial2Quote'), initial: 'A' },
-    { name: t('testimonial3Name'), role: t('testimonial3Role'), quote: t('testimonial3Quote'), initial: 'D' },
-  ];
-
-  return (
-    <section className="py-16 md:py-20">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-[#1A2F3F] text-center mb-12">
-          {t('trustTitle')}
-        </h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map(({ name, role, quote, initial }) => (
-            <div key={name} className="bg-white p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-all">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} className="text-[#F5A623] fill-current" />
-                ))}
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6 italic">&ldquo;{quote}&rdquo;</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#1A2F3F] rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{initial}</span>
-                </div>
-                <div>
-                  <div className="font-bold text-[#1A2F3F] text-sm">{name}</div>
-                  <div className="text-gray-400 text-xs">{role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────
-// 7. PLATFORM PREVIEW
+// 4. PLATFORM PREVIEW
 // ─────────────────────────────────────────────────────
 function PlatformPreview() {
   const t = useTranslations('brokers');
@@ -298,9 +169,7 @@ function PlatformPreview() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {features.map((feat, i) => (
                 <div key={feat} className="bg-white/10 rounded-xl p-4">
-                  <div className="text-[#5CE0D2] text-2xl font-bold mb-1">
-                    {i === 0 ? '700+' : i === 1 ? '24' : i === 2 ? '$180K' : '156'}
-                  </div>
+                  <div className="text-[#5CE0D2] text-2xl font-bold mb-1">--</div>
                   <div className="text-white/60 text-xs">{feat}</div>
                 </div>
               ))}
@@ -413,9 +282,9 @@ function BrokerForm() {
             <div className="space-y-4">
               {[
                 { icon: Shield, text: 'Sin costo de inscripción ni mensualidad' },
-                { icon: Zap, text: 'Acceso inmediato al inventario completo' },
+                { icon: Zap, text: 'Acceso al inventario de desarrollos activos' },
                 { icon: Users, text: 'Account Manager dedicado' },
-                { icon: CheckCircle, text: 'Comisiones en 48 horas' },
+                { icon: CheckCircle, text: 'Estructura de comisiones clara desde el día 1' },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-[#5CE0D2]/20 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -558,11 +427,8 @@ export default function BrokersPageContent() {
   return (
     <div>
       <BrokerHero />
-      <TrustBar />
       <ValueProposition />
       <HowItWorks />
-      <EarningsPotential />
-      <Testimonials />
       <PlatformPreview />
       <FAQ />
       <BrokerForm />

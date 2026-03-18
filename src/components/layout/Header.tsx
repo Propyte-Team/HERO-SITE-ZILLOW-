@@ -38,6 +38,7 @@ export default function Header() {
   const mainLinks = [
     { href: `/${locale}/propiedades`, label: t('properties') },
     { href: `/${locale}/propiedades?stage=preventa`, label: t('presale') },
+    { href: `/${locale}/rentas`, label: t('rentalAnalysis') },
     { href: `/${locale}/nosotros/quienes-somos`, label: locale === 'es' ? 'Nosotros' : 'About' },
     { href: `/${locale}/contacto`, label: t('contact') },
   ];

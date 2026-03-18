@@ -8,21 +8,26 @@ import {
   calculateCashOnCash,
   calculateBreakeven,
   calculateProjectedValue,
+  calculateCapRate,
+  calculateGrossYield,
+  calculateNetYield,
+  calculateIRR,
 } from '@/lib/calculator';
-import { formatPrice } from '@/lib/formatters';
+import { formatPrice, formatPercentage } from '@/lib/formatters';
 import type { Property } from '@/types/property';
 
 interface FinancialSimulatorProps {
   property: Property;
+  mlEstimatedRent?: number;
 }
 
-export default function FinancialSimulator({ property }: FinancialSimulatorProps) {
+export default function FinancialSimulator({ property, mlEstimatedRent }: FinancialSimulatorProps) {
   const t = useTranslations('simulator');
 
   const [downPaymentPct, setDownPaymentPct] = useState(property.financing.downPaymentMin);
   const [months, setMonths] = useState(property.financing.months[1] || property.financing.months[0]);
   const [interestRate, setInterestRate] = useState(property.financing.interestRate);
-  const [monthlyRent, setMonthlyRent] = useState(property.roi.rentalMonthly);
+  const [monthlyRent, setMonthlyRent] = useState(mlEstimatedRent || property.roi.rentalMonthly);
   const [appreciation, setAppreciation] = useState(property.roi.appreciation);
 
   const price = property.price.mxn;
@@ -38,7 +43,26 @@ export default function FinancialSimulator({ property }: FinancialSimulatorProps
     const breakeven = calculateBreakeven(totalInvested, monthlyRent);
     const projectedValue = calculateProjectedValue(price, appreciation, 5);
 
-    return { monthly, roi1, roi3, roi5, cashOnCash, breakeven, projectedValue };
+    const annualRent = monthlyRent * 12;
+    const annualRentNet = annualRent * 0.75;
+    const grossYield = calculateGrossYield(annualRent, price);
+    const netYield = calculateNetYield(annualRent, price);
+    const capRate = calculateCapRate(annualRentNet, price);
+    const monthlyNet = monthlyRent * 0.75 - monthly;
+
+    // IRR: cash flows for 5yr and 10yr
+    const annualNetFlow = monthlyNet * 12;
+    const sale5 = calculateProjectedValue(price, appreciation, 5);
+    const remaining5 = Math.max(0, price * (1 - downPaymentPct / 100) - monthly * 60);
+    const cf5 = [-totalInvested, ...Array(4).fill(annualNetFlow), annualNetFlow + sale5 - remaining5];
+    const irr5 = calculateIRR(cf5);
+
+    const sale10 = calculateProjectedValue(price, appreciation, 10);
+    const remaining10 = Math.max(0, price * (1 - downPaymentPct / 100) - monthly * 120);
+    const cf10 = [-totalInvested, ...Array(9).fill(annualNetFlow), annualNetFlow + sale10 - remaining10];
+    const irr10 = calculateIRR(cf10);
+
+    return { monthly, roi1, roi3, roi5, cashOnCash, breakeven, projectedValue, grossYield, netYield, capRate, monthlyNet, irr5, irr10 };
   }, [price, downPaymentPct, months, interestRate, monthlyRent, appreciation, totalInvested]);
 
   return (
@@ -107,7 +131,14 @@ export default function FinancialSimulator({ property }: FinancialSimulatorProps
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('monthlyRent')}</label>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="block text-sm font-medium text-gray-700">{t('monthlyRent')}</label>
+              {mlEstimatedRent && (
+                <span className="px-1.5 py-0.5 bg-[#5CE0D2]/15 text-[#5CE0D2] text-[10px] font-medium rounded">
+                  {t('mlEstimated')}
+                </span>
+              )}
+            </div>
             <input
               type="number"
               min={5000}
@@ -192,6 +223,45 @@ export default function FinancialSimulator({ property }: FinancialSimulatorProps
             <div className="flex justify-between text-xs text-gray-400 mt-1">
               <span>{formatPrice(price)}</span>
               <span>{formatPrice(results.projectedValue)}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl p-4 border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">{t('grossYield')}</div>
+              <div className="text-lg font-bold text-[#5CE0D2]">{formatPercentage(results.grossYield)}</div>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">{t('netYield')}</div>
+              <div className="text-lg font-bold text-[#5CE0D2]">{formatPercentage(results.netYield)}</div>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">{t('capRate')}</div>
+              <div className="text-lg font-bold text-[#5CE0D2]">{formatPercentage(results.capRate)}</div>
+            </div>
+            <div className="bg-white rounded-xl p-4 border border-gray-100">
+              <div className="text-xs text-gray-500 mb-1">{t('netCashFlow')}</div>
+              <div className={`text-lg font-bold ${results.monthlyNet >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
+                {formatPrice(Math.round(results.monthlyNet))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-5 border border-gray-100">
+            <div className="text-sm text-gray-500 mb-3">{t('irrProjected')}</div>
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <div className="text-lg font-bold text-[#5CE0D2]">
+                  {results.irr5 != null ? formatPercentage(results.irr5) : '—'}
+                </div>
+                <div className="text-xs text-gray-400">{t('irr5yr')}</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-[#5CE0D2]">
+                  {results.irr10 != null ? formatPercentage(results.irr10) : '—'}
+                </div>
+                <div className="text-xs text-gray-400">{t('irr10yr')}</div>
+              </div>
             </div>
           </div>
         </div>

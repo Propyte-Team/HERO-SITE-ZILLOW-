@@ -1,11 +1,13 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, MapPin, Building2, Calendar, ExternalLink } from 'lucide-react';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getPropertyBySlug } from '@/lib/supabase/queries';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { getPropertyBySlug, getRentalEstimate, getDevelopmentFinancials, getMlRentalEstimates } from '@/lib/supabase/queries';
 import { formatPrice } from '@/lib/formatters';
 import SchemaMarkup from '@/components/shared/SchemaMarkup';
 import ContactForm from '@/components/property/ContactForm';
+import RentalEstimate from '@/components/property/RentalEstimate';
+import InvestmentSummary from '@/components/property/InvestmentSummary';
 import { slugify } from '@/lib/utils';
 import { getAllDesarrollos, getDesarrolloBySlug, getDesarrollosByCity } from '@/data/desarrollos';
 
@@ -25,11 +27,12 @@ export async function generateStaticParams() {
   const cityParams = Object.keys(CITY_MAP).map(city => ({ slug: city }));
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServiceRoleClient() || await createServerSupabaseClient();
     const { data } = await supabase
-      .from('properties')
+      .from('developments')
       .select('slug')
       .eq('published', true)
+      .is('deleted_at', null)
       .limit(1000);
 
     if (data && data.length > 0) {
@@ -63,7 +66,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   // ── Development page metadata ──
   let property: any = null;
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServiceRoleClient() || await createServerSupabaseClient();
     const { data } = await getPropertyBySlug(supabase, slug);
     if (data) property = data;
   } catch {
@@ -79,8 +82,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     : `${property.name} — ${property.city} | ${property.stage === 'preventa' ? 'Preventa' : 'En Construccion'}`;
 
   const description = isEn
-    ? (property.description_en || `${property.name} in ${property.zone}, ${property.city}. ${property.price_mxn > 0 ? `From ${formatPrice(property.price_mxn)}.` : ''} Pre-sale opportunity in Riviera Maya.`)
-    : (property.description_es || `${property.name} en ${property.zone}, ${property.city}. ${property.price_mxn > 0 ? `Desde ${formatPrice(property.price_mxn)}.` : ''} Oportunidad de preventa.`);
+    ? (property.description_en || `${property.name} in ${property.zone || ''}, ${property.city}. ${(property.price_min_mxn || (property.price_min_mxn || property.price_mxn)) > 0 ? `From ${formatPrice(property.price_min_mxn || (property.price_min_mxn || property.price_mxn))}.` : ''} Pre-sale opportunity in Riviera Maya.`)
+    : (property.description_es || `${property.name} en ${property.zone || ''}, ${property.city}. ${(property.price_min_mxn || (property.price_min_mxn || property.price_mxn)) > 0 ? `Desde ${formatPrice(property.price_min_mxn || (property.price_min_mxn || property.price_mxn))}.` : ''} Oportunidad de preventa.`);
 
   return {
     title,
@@ -108,8 +111,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 // Helper to safely get supabase client
+// Uses service role to bypass RLS (safe for public read-only queries)
 async function getSupabase() {
   try {
+    const client = await createServiceRoleClient();
+    if (client) return client;
     return await createServerSupabaseClient();
   } catch {
     return null;
@@ -131,11 +137,12 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
     try {
       if (!supabase) throw new Error('No Supabase');
       const { data, count: dbCount } = await supabase
-        .from('properties')
-        .select('id, slug, name, city, zone, state, price_mxn, stage, property_type, images, developers(name, logo_url)', { count: 'exact' })
+        .from('developments')
+        .select('id, slug, name, city, zone, state, price_min_mxn, stage, property_types, images, developers(name, logo_url)', { count: 'exact' })
         .eq('published', true)
+        .is('deleted_at', null)
         .ilike('city', `%${cityInfo.name}%`)
-        .order('price_mxn', { ascending: false })
+        .order('price_min_mxn', { ascending: false, nullsFirst: false })
         .limit(100);
 
       if (data && data.length > 0) {
@@ -153,8 +160,8 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
     const zoneMap: Record<string, number> = {};
     properties?.forEach((p: { zone: string }) => { zoneMap[p.zone || cityInfo.name] = (zoneMap[p.zone || cityInfo.name] || 0) + 1; });
     const zones = Object.entries(zoneMap).sort((a, b) => b[1] - a[1]);
-    const withPrice = properties?.filter((p: { price_mxn: number }) => p.price_mxn > 0) || [];
-    const minPrice = withPrice.length > 0 ? Math.min(...withPrice.map((p: { price_mxn: number }) => p.price_mxn)) : 0;
+    const withPrice = properties?.filter((p: any) => (p.price_min_mxn || p.price_mxn) > 0) || [];
+    const minPrice = withPrice.length > 0 ? Math.min(...withPrice.map((p: any) => p.price_min_mxn || p.price_mxn || 0)) : 0;
 
     return (
       <>
@@ -214,7 +221,7 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
                 <div className="p-4">
                   <h3 className="font-bold text-gray-900 group-hover:text-[#5CE0D2] transition-colors line-clamp-1">{dev.name}</h3>
                   <div className="flex items-center gap-1 mt-1 text-sm text-gray-500"><MapPin size={14} /><span>{dev.zone !== dev.city ? `${dev.zone}, ` : ''}{dev.city}</span></div>
-                  {dev.price_mxn > 0 && <div className="mt-2 font-bold text-gray-900">{isEn ? 'From ' : 'Desde '}{formatPrice(dev.price_mxn)}</div>}
+                  {(dev.price_min_mxn || (dev.price_min_mxn || dev.price_mxn)) > 0 && <div className="mt-2 font-bold text-gray-900">{isEn ? 'From ' : 'Desde '}{formatPrice(dev.price_min_mxn || (dev.price_min_mxn || dev.price_mxn))}</div>}
                 </div>
               </Link>
             ))}
@@ -258,9 +265,10 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
   try {
     if (!supabase) throw new Error('No Supabase');
     const { data } = await supabase
-      .from('properties')
-      .select('id, slug, name, city, zone, price_mxn, stage, property_type, images, developers(name)')
+      .from('developments')
+      .select('id, slug, name, city, zone, price_min_mxn, stage, property_types, images, developers(name)')
       .eq('published', true)
+      .is('deleted_at', null)
       .eq('city', property.city)
       .neq('id', property.id)
       .limit(6);
@@ -269,17 +277,43 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
     similar = getDesarrollosByCity(property.city).filter((d: any) => d.id !== property.id).slice(0, 6);
   }
 
+  // Fetch rental estimate for schema markup + ML financials
+  let rentalMedian: number | null = null;
+  let devFinancials: Awaited<ReturnType<typeof getDevelopmentFinancials>> = null;
+  let mlEstimates: Awaited<ReturnType<typeof getMlRentalEstimates>> = [];
+  try {
+    if (supabase) {
+      const [rentalResult, financialsResult, mlEstimatesResult] = await Promise.all([
+        getRentalEstimate(
+          supabase,
+          property.city,
+          property.property_types?.[0] || property.property_type || 'departamento',
+          null,
+          property.zone,
+        ),
+        getDevelopmentFinancials(supabase, property.id),
+        getMlRentalEstimates(supabase, property.id),
+      ]);
+      if (rentalResult.data) rentalMedian = rentalResult.data.median_rent_mxn;
+      devFinancials = financialsResult;
+      mlEstimates = mlEstimatesResult;
+    }
+  } catch {
+    // Rental/financial data not available
+  }
+
   const stageLabel = property.stage === 'preventa'
     ? (isEn ? 'Pre-sale' : 'Preventa')
     : property.stage === 'construccion'
       ? (isEn ? 'Under Construction' : 'En Construccion')
       : (isEn ? 'Ready to Move In' : 'Entrega Inmediata');
 
-  const typeLabel = property.property_type === 'departamento' ? (isEn ? 'Apartments' : 'Departamentos')
-    : property.property_type === 'terreno' ? (isEn ? 'Land' : 'Terrenos')
-    : property.property_type === 'casa' ? (isEn ? 'Houses' : 'Casas')
-    : property.property_type === 'penthouse' ? 'Penthouse'
-    : property.property_type;
+  const mainType = property.property_types?.[0] || property.property_type || 'departamento';
+  const typeLabel = mainType === 'departamento' ? (isEn ? 'Apartments' : 'Departamentos')
+    : mainType === 'terreno' ? (isEn ? 'Land' : 'Terrenos')
+    : mainType === 'casa' ? (isEn ? 'Houses' : 'Casas')
+    : mainType === 'penthouse' ? 'Penthouse'
+    : mainType;
 
   return (
     <>
@@ -292,10 +326,10 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
           url: `https://propyte.com/${locale}/desarrollos/${slug}`,
           image: property.images?.[0] || undefined,
           datePosted: property.created_at,
-          ...(property.price_mxn > 0 && {
+          ...((property.price_min_mxn || property.price_mxn) > 0 && {
             offers: {
               '@type': 'Offer',
-              price: property.price_mxn,
+              price: (property.price_min_mxn || property.price_mxn),
               priceCurrency: 'MXN',
               availability: 'https://schema.org/InStock',
             },
@@ -307,6 +341,15 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
             addressRegion: property.state,
             addressCountry: 'MX',
           },
+          ...(rentalMedian && {
+            additionalProperty: {
+              '@type': 'PropertyValue',
+              name: 'estimatedMonthlyRent',
+              value: rentalMedian,
+              unitCode: 'MXN',
+              description: 'Estimated monthly rental income based on comparable listings',
+            },
+          }),
         }}
       />
 
@@ -363,13 +406,27 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
                 <span className="text-lg">{property.zone !== property.city ? `${property.zone}, ` : ''}{property.city}, {property.state}</span>
               </div>
 
-              {property.price_mxn > 0 && (
+              {(property.price_min_mxn || property.price_mxn) > 0 && (
                 <div className="mt-4">
                   <span className="text-sm text-gray-500">{isEn ? 'Starting from' : 'Desde'}</span>
-                  <div className="text-3xl font-bold text-gray-900">{formatPrice(property.price_mxn)}</div>
+                  <div className="text-3xl font-bold text-gray-900">{formatPrice((property.price_min_mxn || property.price_mxn))}</div>
                 </div>
               )}
             </div>
+
+            {/* Rental Estimate */}
+            <RentalEstimate
+              city={property.city}
+              zone={property.zone}
+              propertyType={property.property_types?.[0] || property.property_type || 'departamento'}
+              bedrooms={null}
+              locale={locale}
+            />
+
+            {/* Investment Analysis (ML-powered) */}
+            {devFinancials && (
+              <InvestmentSummary financials={devFinancials} locale={locale} />
+            )}
 
             {/* Key Details */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -487,9 +544,9 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
                       <MapPin size={14} />
                       <span>{dev.zone}, {dev.city}</span>
                     </div>
-                    {dev.price_mxn > 0 && (
+                    {(dev.price_min_mxn || dev.price_mxn) > 0 && (
                       <div className="mt-2 font-bold text-gray-900">
-                        {isEn ? 'From ' : 'Desde '}{formatPrice(dev.price_mxn)}
+                        {isEn ? 'From ' : 'Desde '}{formatPrice((dev.price_min_mxn || dev.price_mxn))}
                       </div>
                     )}
                   </div>

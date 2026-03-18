@@ -6,7 +6,18 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   const isEn = locale === 'en';
   return {
-    title: isEn ? 'Who We Are' : 'Quiénes Somos',
+    title: isEn ? 'Who We Are | Propyte' : 'Quiénes Somos | Propyte',
+    description: isEn
+      ? 'Meet the team behind Propyte: mission, vision, and values driving the leading real estate marketplace in Mexico\'s Riviera Maya.'
+      : 'Conoce al equipo detrás de Propyte: misión, visión y valores del marketplace inmobiliario líder en la Riviera Maya de México.',
+    alternates: {
+      canonical: `/${locale}/nosotros/quienes-somos`,
+      languages: {
+        es: '/es/nosotros/quienes-somos',
+        en: '/en/nosotros/quienes-somos',
+        'x-default': '/es/nosotros/quienes-somos',
+      },
+    },
   };
 }
 

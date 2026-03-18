@@ -14,11 +14,11 @@ export default function TrendingMarket() {
   ];
 
   const zones = [
-    { name: 'Playacar', trend: '+12%', properties: 45 },
-    { name: '5ta Avenida', trend: '+15%', properties: 68 },
-    { name: 'Tulum Centro', trend: '+18%', properties: 52 },
-    { name: 'Zamá', trend: '+14%', properties: 37 },
-    { name: 'Aldea Zamá', trend: '+16%', properties: 29 },
+    { name: 'Playacar', trend: '+12%' },
+    { name: '5ta Avenida', trend: '+15%' },
+    { name: 'Tulum Centro', trend: '+18%' },
+    { name: 'Zamá', trend: '+14%' },
+    { name: 'Aldea Zamá', trend: '+16%' },
   ];
 
   return (
@@ -56,7 +56,7 @@ export default function TrendingMarket() {
               >
                 <div>
                   <span className="text-white font-semibold">{zone.name}</span>
-                  <span className="text-white/60 text-sm ml-3">{zone.properties} propiedades</span>
+                  <span className="text-white/60 text-sm ml-3">Ver propiedades</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[#22C55E] font-bold text-sm">{zone.trend}</span>
@@ -66,6 +66,9 @@ export default function TrendingMarket() {
             ))}
           </div>
         </div>
+        <p className="text-xs text-gray-400 mt-6 text-center">
+          Fuentes: datos estimados basados en análisis de mercado de la Riviera Maya. Rendimientos pasados no garantizan resultados futuros.
+        </p>
       </div>
     </section>
   );

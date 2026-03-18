@@ -307,6 +307,172 @@ export async function getMmmData(client: Client, zoneId?: string) {
 }
 
 // ============================================================
+// RENTAL ESTIMATE QUERIES
+// ============================================================
+
+export interface RentalEstimate {
+  city: string;
+  zone: string | null;
+  property_type: string;
+  bedrooms: number | null;
+  rental_type: string;
+  sample_size: number;
+  median_rent_mxn: number;
+  avg_rent_mxn: number;
+  p25_rent_mxn: number;
+  p75_rent_mxn: number;
+  min_rent_mxn: number;
+  max_rent_mxn: number;
+  avg_rent_per_m2: number | null;
+  last_updated: string;
+}
+
+/**
+ * Get rental estimate by querying rental_comparables directly.
+ * Computes aggregates in JS since Supabase REST doesn't support percentile_cont.
+ * Falls back: zone+type+beds → city+type+beds → city+type → city.
+ */
+export async function getRentalEstimate(
+  client: Client,
+  city: string,
+  propertyType?: string | null,
+  bedrooms?: number | null,
+  zone?: string | null,
+  rentalType: string = 'residencial',
+): Promise<{ data: RentalEstimate | null; fallback: boolean }> {
+  const MIN_SAMPLE = 3;
+
+  // Build queries in fallback order
+  const attempts: Array<{ filter: Record<string, unknown>; isFallback: boolean }> = [];
+
+  if (zone && propertyType && bedrooms) {
+    attempts.push({ filter: { city, zone, property_type: propertyType, bedrooms, rental_type: rentalType }, isFallback: false });
+  }
+  if (propertyType && bedrooms) {
+    attempts.push({ filter: { city, property_type: propertyType, bedrooms, rental_type: rentalType }, isFallback: true });
+  }
+  if (propertyType) {
+    attempts.push({ filter: { city, property_type: propertyType, rental_type: rentalType }, isFallback: true });
+  }
+  attempts.push({ filter: { city, rental_type: rentalType }, isFallback: true });
+
+  for (const attempt of attempts) {
+    let query = client
+      .from('rental_comparables')
+      .select('monthly_rent_mxn, area_m2, bedrooms, zone')
+      .eq('active', true);
+
+    for (const [key, value] of Object.entries(attempt.filter)) {
+      if (value != null) {
+        query = query.eq(key, value);
+      }
+    }
+
+    const { data } = await query.order('monthly_rent_mxn', { ascending: true });
+
+    if (data && data.length >= MIN_SAMPLE) {
+      const prices = data.map((d: { monthly_rent_mxn: number }) => d.monthly_rent_mxn).sort((a: number, b: number) => a - b);
+      const areas = data
+        .filter((d: { area_m2: number | null }) => d.area_m2 && d.area_m2 > 0)
+        .map((d: { area_m2: number; monthly_rent_mxn: number }) => d.monthly_rent_mxn / d.area_m2);
+
+      const median = prices[Math.floor(prices.length / 2)];
+      const p25 = prices[Math.floor(prices.length * 0.25)];
+      const p75 = prices[Math.floor(prices.length * 0.75)];
+      const avg = Math.round(prices.reduce((a: number, b: number) => a + b, 0) / prices.length);
+      const avgPerM2 = areas.length >= 3
+        ? Math.round((areas.reduce((a: number, b: number) => a + b, 0) / areas.length) * 100) / 100
+        : null;
+
+      return {
+        data: {
+          city,
+          zone: zone || null,
+          property_type: propertyType || 'departamento',
+          bedrooms: bedrooms || null,
+          rental_type: rentalType,
+          sample_size: prices.length,
+          median_rent_mxn: median,
+          avg_rent_mxn: avg,
+          p25_rent_mxn: p25,
+          p75_rent_mxn: p75,
+          min_rent_mxn: prices[0],
+          max_rent_mxn: prices[prices.length - 1],
+          avg_rent_per_m2: avgPerM2,
+          last_updated: new Date().toISOString(),
+        },
+        fallback: attempt.isFallback,
+      };
+    }
+  }
+
+  return { data: null, fallback: true };
+}
+
+/**
+ * Get both residential and vacation rental estimates.
+ */
+export async function getRentalEstimates(
+  client: Client,
+  city: string,
+  propertyType?: string | null,
+  bedrooms?: number | null,
+  zone?: string | null,
+): Promise<{ residencial: RentalEstimate | null; vacacional: RentalEstimate | null }> {
+  const [residencial, vacacional] = await Promise.all([
+    getRentalEstimate(client, city, propertyType, bedrooms, zone, 'residencial'),
+    getRentalEstimate(client, city, propertyType, bedrooms, zone, 'vacacional'),
+  ]);
+
+  return {
+    residencial: residencial.data,
+    vacacional: vacacional.data,
+  };
+}
+
+// ============================================================
+// ML RENTAL ESTIMATES & DEVELOPMENT FINANCIALS
+// ============================================================
+
+export async function getDevelopmentFinancials(client: Client, developmentId: string) {
+  const { data, error } = await client
+    .from('development_financials')
+    .select('*')
+    .eq('development_id', developmentId)
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+export async function getMlRentalEstimates(client: Client, developmentId: string) {
+  const { data } = await client
+    .from('rental_ml_estimates')
+    .select('*')
+    .eq('development_id', developmentId)
+    .order('bedrooms', { ascending: true });
+
+  return data || [];
+}
+
+export async function getMlRentalEstimateForUnit(
+  client: Client,
+  developmentId: string,
+  unitType: string,
+  bedrooms: number,
+) {
+  const { data } = await client
+    .from('rental_ml_estimates')
+    .select('*')
+    .eq('development_id', developmentId)
+    .eq('unit_type', unitType)
+    .eq('bedrooms', bedrooms)
+    .single();
+
+  return data || null;
+}
+
+// ============================================================
 // ADMIN: DEVELOPMENT CRUD
 // ============================================================
 

@@ -46,3 +46,60 @@ export function calculateProjectedValue(
 ): number {
   return Math.round(price * Math.pow(1 + appreciation / 100, years));
 }
+
+export function calculateCapRate(annualNetRent: number, price: number): number {
+  if (price === 0) return 0;
+  return (annualNetRent / price) * 100;
+}
+
+export function calculateGrossYield(annualRent: number, price: number): number {
+  if (price === 0) return 0;
+  return (annualRent / price) * 100;
+}
+
+export function calculateNetYield(
+  annualRent: number,
+  price: number,
+  expenseRatio: number = 0.25
+): number {
+  if (price === 0) return 0;
+  return (annualRent * (1 - expenseRatio) / price) * 100;
+}
+
+/**
+ * Calculate Internal Rate of Return using Newton-Raphson method.
+ * cashFlows: array of annual cash flows (negative initial investment, positive returns).
+ * Returns annual IRR as percentage, or null if doesn't converge.
+ */
+export function calculateIRR(cashFlows: number[]): number | null {
+  if (cashFlows.length < 2) return null;
+
+  let rate = 0.1; // initial guess 10%
+  const maxIterations = 100;
+  const tolerance = 1e-7;
+
+  for (let i = 0; i < maxIterations; i++) {
+    let npv = 0;
+    let dnpv = 0;
+
+    for (let t = 0; t < cashFlows.length; t++) {
+      const factor = Math.pow(1 + rate, t);
+      npv += cashFlows[t] / factor;
+      dnpv -= (t * cashFlows[t]) / (factor * (1 + rate));
+    }
+
+    if (Math.abs(dnpv) < 1e-12) break;
+
+    const newRate = rate - npv / dnpv;
+
+    if (Math.abs(newRate - rate) < tolerance) {
+      return newRate * 100;
+    }
+    rate = newRate;
+
+    // Guard against divergence
+    if (rate < -0.99 || rate > 10) return null;
+  }
+
+  return null;
+}

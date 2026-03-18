@@ -8,6 +8,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     title: t('marketplaceTitle'),
     description: t('marketplaceDescription'),
     alternates: {
+      canonical: `/${locale}/propiedades`,
       languages: {
         es: '/es/propiedades',
         en: '/en/properties',
