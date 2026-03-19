@@ -805,6 +805,21 @@
     "disclaimer": "Las estimaciones son generadas por un modelo de Machine Learning basado en comparables de mercado. No constituyen consejo de inversión. Consulta a un asesor para un análisis personalizado.",
     "modelVersion": "Modelo",
     "noData": "No hay datos de análisis disponibles",
-    "noDataHint": "Ejecuta el analista de rentas para generar las estimaciones ML."
+    "noDataHint": "Ejecuta el analista de rentas para generar las estimaciones ML.",
+    "filters": "Filtros",
+    "clearFilters": "Limpiar filtros",
+    "filterCity": "Ciudad",
+    "filterType": "Tipo",
+    "filterBeds": "Recámaras",
+    "filterRentalType": "Tipo de renta",
+    "filterFurnished": "Amueblado",
+    "filterZone": "Zona / Colonia",
+    "filterMinSamples": "Mín. muestras",
+    "filterRentMin": "Renta mín",
+    "filterRentMax": "Renta máx",
+    "all": "Todos",
+    "yes": "Sí",
+    "count": "Resultados",
+    "ofTotal": "de {total} comparables"
   }
 }
