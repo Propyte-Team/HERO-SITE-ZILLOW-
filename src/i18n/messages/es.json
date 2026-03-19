@@ -819,6 +819,8 @@
     "filterRentMax": "Renta máx",
     "all": "Todos",
     "yes": "Sí",
+    "p25": "Renta baja",
+    "p75": "Renta alta",
     "count": "Resultados",
     "ofTotal": "de {total} comparables"
   }

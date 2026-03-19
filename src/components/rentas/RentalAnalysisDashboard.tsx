@@ -638,8 +638,8 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
             <MetricCard label={t('count')} value={metrics.count.toLocaleString()} />
             <MetricCard label={t('avgRent')} value={formatPrice(metrics.avg)} highlight />
             <MetricCard label={t('medianRent')} value={formatPrice(metrics.median)} highlight />
-            <MetricCard label="P25" value={formatPrice(metrics.p25)} />
-            <MetricCard label="P75" value={formatPrice(metrics.p75)} />
+            <MetricCard label={t('p25')} value={formatPrice(metrics.p25)} />
+            <MetricCard label={t('p75')} value={formatPrice(metrics.p75)} />
             <MetricCard label={t('minRent')} value={formatPrice(metrics.min)} />
             <MetricCard label={t('maxRent')} value={formatPrice(metrics.max)} />
           </div>

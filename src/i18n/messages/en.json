@@ -819,6 +819,8 @@
     "filterRentMax": "Rent max",
     "all": "All",
     "yes": "Yes",
+    "p25": "Low range",
+    "p75": "High range",
     "count": "Results",
     "ofTotal": "of {total} comparables"
   }
