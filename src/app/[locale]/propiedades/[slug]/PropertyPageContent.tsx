@@ -169,7 +169,7 @@ export default function PropertyPageContent({ property, similar, locale }: Prope
 
             <PropertySpecs property={property} />
             <PriceTimeline property={property} />
-            <FinancialSimulator property={property} />
+            <FinancialSimulator property={property} state={property.location.state} />
 
             {/* Location & Proximity */}
             <div>

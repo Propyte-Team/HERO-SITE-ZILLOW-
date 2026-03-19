@@ -279,6 +279,7 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
 
   // Fetch rental estimate for schema markup + ML financials
   let rentalMedian: number | null = null;
+  let rentalPerM2: number | null = null;
   let devFinancials: Awaited<ReturnType<typeof getDevelopmentFinancials>> = null;
   let mlEstimates: Awaited<ReturnType<typeof getMlRentalEstimates>> = [];
   try {
@@ -294,13 +295,22 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
         getDevelopmentFinancials(supabase, property.id),
         getMlRentalEstimates(supabase, property.id),
       ]);
-      if (rentalResult.data) rentalMedian = rentalResult.data.median_rent_mxn;
+      if (rentalResult.data) {
+        rentalMedian = rentalResult.data.median_rent_mxn;
+        rentalPerM2 = rentalResult.data.avg_rent_per_m2;
+      }
       devFinancials = financialsResult;
       mlEstimates = mlEstimatesResult;
     }
   } catch {
     // Rental/financial data not available
   }
+
+  // Property data for financial analysis
+  const propertyState = property.state || 'Quintana Roo';
+  const propertyPrice = property.price_min_mxn || property.price_mxn || 0;
+  // Get representative area from units or property
+  const representativeArea = property.area_m2 || property.area_min || null;
 
   const stageLabel = property.stage === 'preventa'
     ? (isEn ? 'Pre-sale' : 'Preventa')
@@ -421,11 +431,24 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
               propertyType={property.property_types?.[0] || property.property_type || 'departamento'}
               bedrooms={null}
               locale={locale}
+              areaM2={representativeArea}
+              priceMin={propertyPrice > 0 ? propertyPrice : null}
+              state={propertyState}
             />
 
-            {/* Investment Analysis (ML-powered) */}
+            {/* Investment Analysis (ML-powered + comparables) */}
             {devFinancials && (
-              <InvestmentSummary financials={devFinancials} locale={locale} />
+              <InvestmentSummary
+                financials={devFinancials}
+                locale={locale}
+                price={propertyPrice > 0 ? propertyPrice : null}
+                state={propertyState}
+                estimatedRent={
+                  rentalPerM2 && representativeArea
+                    ? Math.round(rentalPerM2 * representativeArea)
+                    : rentalMedian
+                }
+              />
             )}
 
             {/* Key Details */}

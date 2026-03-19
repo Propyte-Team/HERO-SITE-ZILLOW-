@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { RENT_BOUNDS } from '@/lib/calculator';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Client = SupabaseClient<any, any, any>;
@@ -360,7 +361,9 @@ export async function getRentalEstimate(
     let query = client
       .from('rental_comparables')
       .select('monthly_rent_mxn, area_m2, bedrooms, zone')
-      .eq('active', true);
+      .eq('active', true)
+      .gte('monthly_rent_mxn', RENT_BOUNDS.MIN)
+      .lte('monthly_rent_mxn', RENT_BOUNDS.MAX);
 
     for (const [key, value] of Object.entries(attempt.filter)) {
       if (value != null) {

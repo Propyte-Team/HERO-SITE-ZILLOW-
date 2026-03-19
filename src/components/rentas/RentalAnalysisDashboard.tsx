@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import {
   Building2, MapPin, BarChart3, ArrowUpRight,
   ChevronDown, Loader2, X, SlidersHorizontal,
+  Database, Clock, ChevronRight, Info,
 } from 'lucide-react';
 import { formatPrice, formatPercentage } from '@/lib/formatters';
 
@@ -44,10 +45,17 @@ interface DevelopmentFinancial {
   estimated_rent_vac: number | null;
 }
 
+interface SourceStat {
+  source: string;
+  count: number;
+}
+
 interface AnalysisData {
   comparables: Comparable[];
   developments: DevelopmentFinancial[];
   city_stats: Array<Record<string, unknown>>;
+  source_stats: SourceStat[];
+  data_freshness: string | null;
   model: { version: string; last_computed: string } | null;
   total_comparables: number;
 }
@@ -274,14 +282,16 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
     fetchData();
   }, []);
 
-  // ── Normalize zones once ──
+  // ── Normalize zones + price bounds safety net ──
   type ComparableWithZone = Comparable & { normalizedZone: string | null };
   const normalizedComparables = useMemo<ComparableWithZone[]>(() => {
     if (!data?.comparables) return [];
-    return data.comparables.map(c => ({
-      ...c,
-      normalizedZone: normalizeZone(c.city, c.zone),
-    }));
+    return data.comparables
+      .filter(c => c.rent >= 5000 && c.rent <= 500000)
+      .map(c => ({
+        ...c,
+        normalizedZone: normalizeZone(c.city, c.zone),
+      }));
   }, [data?.comparables]);
 
   // ── Filtered comparables ──
@@ -473,6 +483,32 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
         </div>
       </section>
 
+      {/* Source badges + data freshness */}
+      {data.source_stats && data.source_stats.length > 0 && (
+        <section className="max-w-[1280px] mx-auto px-4 md:px-6 -mt-3 mb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Database size={14} className="text-gray-400" />
+            {data.source_stats.map(s => (
+              <span key={s.source} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#5CE0D2]" />
+                {s.source} <span className="text-gray-400">({s.count.toLocaleString()})</span>
+              </span>
+            ))}
+            {data.data_freshness && (() => {
+              const daysAgo = Math.floor((Date.now() - new Date(data.data_freshness).getTime()) / 86400000);
+              const dotColor = daysAgo <= 7 ? 'bg-[#22C55E]' : daysAgo <= 30 ? 'bg-yellow-400' : 'bg-[#EF4444]';
+              return (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-500 ml-auto">
+                  <Clock size={10} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+                  {t('dataFreshness')}: {daysAgo <= 0 ? t('today') : `${daysAgo}d`}
+                </span>
+              );
+            })()}
+          </div>
+        </section>
+      )}
+
       {/* Filter Bar */}
       <section className="max-w-[1280px] mx-auto px-4 md:px-6 -mt-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 md:p-6">
@@ -652,8 +688,14 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
               </span>
             </div>
           )}
+
+          {/* Rent Distribution Histogram */}
+          <RentHistogram rents={filtered.map(c => c.rent)} />
         </section>
       )}
+
+      {/* Methodology (collapsible) */}
+      <MethodologySection t={t} />
 
       {/* Breakdowns */}
       {metrics && (
@@ -789,6 +831,71 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
 }
 
 // ── Sub-components ───────────────────────────────────
+
+function RentHistogram({ rents }: { rents: number[] }) {
+  if (rents.length < 10) return null;
+
+  const BUCKETS = 12;
+  const min = Math.min(...rents);
+  const max = Math.max(...rents);
+  const range = max - min;
+  if (range <= 0) return null;
+
+  const bucketSize = range / BUCKETS;
+  const buckets = Array(BUCKETS).fill(0);
+  for (const r of rents) {
+    const idx = Math.min(Math.floor((r - min) / bucketSize), BUCKETS - 1);
+    buckets[idx]++;
+  }
+  const maxCount = Math.max(...buckets);
+
+  return (
+    <div className="mt-6 bg-white rounded-xl border border-gray-100 p-4">
+      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Distribución de rentas</div>
+      <div className="flex items-end gap-1 h-24">
+        {buckets.map((count, i) => {
+          const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
+          const bucketMin = min + i * bucketSize;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+              <div
+                className="w-full bg-[#5CE0D2]/70 hover:bg-[#5CE0D2] rounded-t transition-colors cursor-default"
+                style={{ height: `${Math.max(height, 2)}%` }}
+                title={`$${Math.round(bucketMin / 1000)}K–$${Math.round((bucketMin + bucketSize) / 1000)}K: ${count}`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+        <span>${Math.round(min / 1000)}K</span>
+        <span>${Math.round((min + max) / 2000)}K</span>
+        <span>${Math.round(max / 1000)}K</span>
+      </div>
+    </div>
+  );
+}
+
+function MethodologySection({ t }: { t: (key: string) => string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="max-w-[1280px] mx-auto px-4 md:px-6 mt-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        <Info size={14} />
+        <span>{t('methodology')}</span>
+        <ChevronRight size={14} className={`transition-transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+      {open && (
+        <div className="mt-2 bg-white rounded-xl border border-gray-100 p-4 text-sm text-gray-600 leading-relaxed">
+          {t('methodologyBody')}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function MetricCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (

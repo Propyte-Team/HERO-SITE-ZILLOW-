@@ -1,3 +1,26 @@
+// ── Rent bounds (hard filter) ──
+export const RENT_BOUNDS = { MIN: 5_000, MAX: 500_000 } as const;
+
+// ── Closing costs (escrituración) by state ──
+export const CLOSING_COSTS_BY_STATE: Record<string, number> = {
+  'Quintana Roo': 0.08,
+  'Yucatan': 0.06,
+};
+
+export function getClosingCostRate(state: string): number {
+  return CLOSING_COSTS_BY_STATE[state] ?? 0.06;
+}
+
+export function calculateClosingCosts(price: number, state: string): number {
+  return Math.round(price * getClosingCostRate(state));
+}
+
+export function calculateTotalInvestment(price: number, state: string): number {
+  return price + calculateClosingCosts(price, state);
+}
+
+// ── Financial calculators ──
+
 export function calculateMonthlyPayment(
   price: number,
   downPaymentPct: number,

@@ -12,6 +12,8 @@ import {
   calculateGrossYield,
   calculateNetYield,
   calculateIRR,
+  getClosingCostRate,
+  calculateClosingCosts,
 } from '@/lib/calculator';
 import { formatPrice, formatPercentage } from '@/lib/formatters';
 import type { Property } from '@/types/property';
@@ -19,9 +21,10 @@ import type { Property } from '@/types/property';
 interface FinancialSimulatorProps {
   property: Property;
   mlEstimatedRent?: number;
+  state?: string;
 }
 
-export default function FinancialSimulator({ property, mlEstimatedRent }: FinancialSimulatorProps) {
+export default function FinancialSimulator({ property, mlEstimatedRent, state }: FinancialSimulatorProps) {
   const t = useTranslations('simulator');
 
   const [downPaymentPct, setDownPaymentPct] = useState(property.financing.downPaymentMin);
@@ -31,8 +34,11 @@ export default function FinancialSimulator({ property, mlEstimatedRent }: Financ
   const [appreciation, setAppreciation] = useState(property.roi.appreciation);
 
   const price = property.price.mxn;
+  const closingCostRate = getClosingCostRate(state || 'Quintana Roo');
+  const closingCosts = calculateClosingCosts(price, state || 'Quintana Roo');
+  const totalPropertyCost = price + closingCosts;
   const downPayment = price * (downPaymentPct / 100);
-  const totalInvested = downPayment;
+  const totalInvested = downPayment + closingCosts;
 
   const results = useMemo(() => {
     const monthly = calculateMonthlyPayment(price, downPaymentPct, months, interestRate);
@@ -45,9 +51,9 @@ export default function FinancialSimulator({ property, mlEstimatedRent }: Financ
 
     const annualRent = monthlyRent * 12;
     const annualRentNet = annualRent * 0.75;
-    const grossYield = calculateGrossYield(annualRent, price);
-    const netYield = calculateNetYield(annualRent, price);
-    const capRate = calculateCapRate(annualRentNet, price);
+    const grossYield = calculateGrossYield(annualRent, totalPropertyCost);
+    const netYield = calculateNetYield(annualRent, totalPropertyCost);
+    const capRate = calculateCapRate(annualRentNet, totalPropertyCost);
     const monthlyNet = monthlyRent * 0.75 - monthly;
 
     // IRR: cash flows for 5yr and 10yr
@@ -63,7 +69,7 @@ export default function FinancialSimulator({ property, mlEstimatedRent }: Financ
     const irr10 = calculateIRR(cf10);
 
     return { monthly, roi1, roi3, roi5, cashOnCash, breakeven, projectedValue, grossYield, netYield, capRate, monthlyNet, irr5, irr10 };
-  }, [price, downPaymentPct, months, interestRate, monthlyRent, appreciation, totalInvested]);
+  }, [price, downPaymentPct, months, interestRate, monthlyRent, appreciation, totalInvested, totalPropertyCost]);
 
   return (
     <div className="bg-[#F4F6F8] rounded-xl p-6 md:p-8">
@@ -76,6 +82,18 @@ export default function FinancialSimulator({ property, mlEstimatedRent }: Financ
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('propertyPrice')}</label>
             <div className="h-11 px-3 bg-gray-100 border border-gray-200 rounded-lg flex items-center text-sm font-semibold text-gray-500">
               {formatPrice(price)}
+            </div>
+          </div>
+
+          {/* Closing costs (read-only) */}
+          <div className="bg-[#5CE0D2]/5 border border-[#5CE0D2]/15 rounded-lg p-3 space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">{t('closingCosts')} ({Math.round(closingCostRate * 100)}%)</span>
+              <span className="font-medium">{formatPrice(closingCosts)}</span>
+            </div>
+            <div className="flex justify-between text-sm border-t border-[#5CE0D2]/10 pt-1">
+              <span className="font-semibold text-gray-700">{t('totalInvestment')}</span>
+              <span className="font-bold text-gray-900">{formatPrice(totalPropertyCost)}</span>
             </div>
           </div>
 

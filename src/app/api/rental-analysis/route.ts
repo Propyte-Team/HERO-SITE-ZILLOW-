@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { RENT_BOUNDS } from '@/lib/calculator';
 
 export const revalidate = 3600; // Cache for 1 hour
 
@@ -32,18 +33,22 @@ export async function GET(request: NextRequest) {
       .order('rent_yield_gross', { ascending: false })
       .limit(100);
 
-    // 2. Fetch rental comparables aggregated stats per city (paginated)
+    // 2. Fetch rental comparables (paginated) — with price bounds filter
     const allComparables: Array<{
       city: string; property_type: string; bedrooms: number | null;
       monthly_rent_mxn: number; area_m2: number | null; rental_type: string;
+      zone: string | null; is_furnished: boolean | null;
+      source_portal: string; scraped_at: string;
     }> = [];
     let offset = 0;
     const pageSize = 1000;
     while (true) {
       const { data: page } = await supabase
         .from('rental_comparables')
-        .select('city, property_type, bedrooms, monthly_rent_mxn, area_m2, rental_type')
+        .select('city, zone, property_type, bedrooms, monthly_rent_mxn, area_m2, rental_type, is_furnished, source_portal, scraped_at')
         .eq('active', true)
+        .gte('monthly_rent_mxn', RENT_BOUNDS.MIN)
+        .lte('monthly_rent_mxn', RENT_BOUNDS.MAX)
         .range(offset, offset + pageSize - 1);
       if (!page || page.length === 0) break;
       allComparables.push(...page);
@@ -51,6 +56,18 @@ export async function GET(request: NextRequest) {
       offset += pageSize;
     }
     const comparables = allComparables;
+
+    // Source stats (computed server-side to avoid inflating payload)
+    const sourceMap: Record<string, number> = {};
+    let latestScraped = '';
+    for (const r of comparables) {
+      const src = r.source_portal || 'otro';
+      sourceMap[src] = (sourceMap[src] || 0) + 1;
+      if (r.scraped_at && r.scraped_at > latestScraped) latestScraped = r.scraped_at;
+    }
+    const sourceStats = Object.entries(sourceMap)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count);
 
     // Aggregate comparables by city
     const cityStats: Record<string, {
@@ -146,6 +163,16 @@ export async function GET(request: NextRequest) {
       : null;
 
     return NextResponse.json({
+      comparables: comparables.map(r => ({
+        city: r.city,
+        zone: r.zone,
+        pt: r.property_type,
+        beds: r.bedrooms,
+        rent: r.monthly_rent_mxn,
+        m2: r.area_m2,
+        rt: r.rental_type,
+        fur: r.is_furnished,
+      })),
       developments: (financials || []).map((f: Record<string, unknown>) => {
         const dev = f.developments as Record<string, unknown> | null;
         return {
@@ -172,6 +199,8 @@ export async function GET(request: NextRequest) {
         };
       }),
       city_stats: Object.values(cityStats).sort((a, b) => b.count - a.count),
+      source_stats: sourceStats,
+      data_freshness: latestScraped || null,
       model: modelInfo,
       total_comparables: comparables?.length || 0,
     }, {
