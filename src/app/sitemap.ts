@@ -21,6 +21,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/nosotros/equipo-comercial', priority: 0.7, changeFrequency: 'monthly' as const },
     { path: '/contacto', priority: 0.6, changeFrequency: 'monthly' as const },
     { path: '/buscar', priority: 0.8, changeFrequency: 'weekly' as const },
+    { path: '/rentas', priority: 0.85, changeFrequency: 'weekly' as const },
+    { path: '/zonas', priority: 0.85, changeFrequency: 'weekly' as const },
   ];
 
   for (const page of staticPages) {
@@ -42,6 +44,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(),
         changeFrequency: 'daily',
         priority: 0.85,
+      });
+    }
+  }
+
+  // ── Zone pages ──────────────────────────────
+  const zoneSlugs = [
+    'zona-hotelera', 'puerto-cancún', 'centro', 'supermanzana-11-17',
+    'arbolada', 'aqua---cumbres', 'lagos-del-sol', 'alfredo-v.-bonfil',
+    'las-torres', 'isla-dorada', 'residencial-río', 'selvamar', 'palmaris', 'campestre',
+  ];
+  for (const slug of zoneSlugs) {
+    for (const locale of LOCALES) {
+      entries.push({
+        url: `${BASE_URL}/${locale}/zonas/${slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.8,
       });
     }
   }

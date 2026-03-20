@@ -42,6 +42,7 @@ export default function Header() {
     { href: `/${locale}/propiedades?stage=preventa`, label: t('presale') },
     { href: `/${locale}/buscar`, label: tAi('navLabel'), icon: Sparkles },
     { href: `/${locale}/rentas`, label: t('rentalAnalysis') },
+    { href: `/${locale}/zonas`, label: locale === 'es' ? 'Zonas' : 'Zones' },
     { href: `/${locale}/nosotros/quienes-somos`, label: locale === 'es' ? 'Nosotros' : 'About' },
     { href: `/${locale}/contacto`, label: t('contact') },
   ];
