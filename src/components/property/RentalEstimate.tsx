@@ -1,7 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getRentalEstimates } from '@/lib/supabase/queries';
-import { formatPrice, formatArea } from '@/lib/formatters';
-import { getClosingCostRate, calculateClosingCosts, calculateTotalInvestment } from '@/lib/calculator';
+import { getRentalEstimates, getAirdnaMarketSummary } from '@/lib/supabase/queries';
+import type { AirdnaMarketSummary } from '@/lib/supabase/queries';
+import { formatPrice } from '@/lib/formatters';
+import { getClosingCostRate, calculateClosingCosts, calculateTotalInvestment, CITY_TO_AIRDNA } from '@/lib/calculator';
 import type { RentalEstimate as RentalEstimateType } from '@/lib/supabase/queries';
 
 interface RentalEstimateProps {
@@ -192,18 +193,19 @@ export default async function RentalEstimate({
     residencial: null,
     vacacional: null,
   };
+  let airdnaSummary: AirdnaMarketSummary | null = null;
 
   try {
     const supabase = await createServerSupabaseClient();
     if (!supabase) return null;
 
-    estimates = await getRentalEstimates(
-      supabase,
-      city,
-      propertyType || 'departamento',
-      bedrooms,
-      zone,
-    );
+    const airdnaMarket = CITY_TO_AIRDNA[city] || '';
+    const [est, airdna] = await Promise.all([
+      getRentalEstimates(supabase, city, propertyType || 'departamento', bedrooms, zone),
+      airdnaMarket ? getAirdnaMarketSummary(supabase, airdnaMarket) : Promise.resolve(null),
+    ]);
+    estimates = est;
+    airdnaSummary = airdna;
   } catch {
     return null;
   }
@@ -249,6 +251,36 @@ export default async function RentalEstimate({
           />
         )}
       </div>
+
+      {/* AirDNA Market Insight */}
+      {airdnaSummary && (
+        <div className="mt-4 p-3 bg-[#0F1923] rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-1.5 py-0.5 bg-[#5CE0D2]/20 text-[#5CE0D2] text-[9px] font-bold rounded uppercase tracking-wider">AirDNA</span>
+            <span className="text-[11px] text-gray-400">{city}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            {airdnaSummary.current_occupancy != null && (
+              <div>
+                <div className="text-lg font-bold text-white">{Math.round(airdnaSummary.current_occupancy)}%</div>
+                <div className="text-[10px] text-gray-500">{isEn ? 'Occupancy' : 'Ocupación'}</div>
+              </div>
+            )}
+            {airdnaSummary.current_adr != null && (
+              <div>
+                <div className="text-lg font-bold text-white">${airdnaSummary.current_adr.toLocaleString()}</div>
+                <div className="text-[10px] text-gray-500">ADR/{isEn ? 'night' : 'noche'}</div>
+              </div>
+            )}
+            {airdnaSummary.active_listings != null && (
+              <div>
+                <div className="text-lg font-bold text-white">{airdnaSummary.active_listings.toLocaleString()}</div>
+                <div className="text-[10px] text-gray-500">Listings</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Investment analysis with closing costs */}
       {showInvestment && (

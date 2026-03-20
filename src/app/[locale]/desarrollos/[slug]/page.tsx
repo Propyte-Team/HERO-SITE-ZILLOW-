@@ -2,8 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, MapPin, Building2, Calendar, ExternalLink } from 'lucide-react';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { getPropertyBySlug, getRentalEstimate, getDevelopmentFinancials, getMlRentalEstimates } from '@/lib/supabase/queries';
+import { getPropertyBySlug, getRentalEstimate, getDevelopmentFinancials, getMlRentalEstimates, getAirdnaMarketSummary } from '@/lib/supabase/queries';
 import { formatPrice } from '@/lib/formatters';
+import { CITY_TO_AIRDNA } from '@/lib/calculator';
 import SchemaMarkup from '@/components/shared/SchemaMarkup';
 import ContactForm from '@/components/property/ContactForm';
 import RentalEstimate from '@/components/property/RentalEstimate';
@@ -280,27 +281,33 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
   // Fetch rental estimate for schema markup + ML financials
   let rentalMedian: number | null = null;
   let rentalPerM2: number | null = null;
+  let rentalMedianVac: number | null = null;
   let devFinancials: Awaited<ReturnType<typeof getDevelopmentFinancials>> = null;
   let mlEstimates: Awaited<ReturnType<typeof getMlRentalEstimates>> = [];
+  let airdnaOccupancy: number | null = null;
   try {
     if (supabase) {
-      const [rentalResult, financialsResult, mlEstimatesResult] = await Promise.all([
-        getRentalEstimate(
-          supabase,
-          property.city,
-          property.property_types?.[0] || property.property_type || 'departamento',
-          null,
-          property.zone,
-        ),
+      const propType = property.property_types?.[0] || property.property_type || 'departamento';
+      const airdnaMarket = CITY_TO_AIRDNA[property.city] || '';
+      const [rentalResult, vacResult, financialsResult, mlEstimatesResult, airdnaResult] = await Promise.all([
+        getRentalEstimate(supabase, property.city, propType, null, property.zone, 'residencial'),
+        getRentalEstimate(supabase, property.city, propType, null, property.zone, 'vacacional'),
         getDevelopmentFinancials(supabase, property.id),
         getMlRentalEstimates(supabase, property.id),
+        airdnaMarket ? getAirdnaMarketSummary(supabase, airdnaMarket) : Promise.resolve(null),
       ]);
       if (rentalResult.data) {
         rentalMedian = rentalResult.data.median_rent_mxn;
         rentalPerM2 = rentalResult.data.avg_rent_per_m2;
       }
+      if (vacResult.data) {
+        rentalMedianVac = vacResult.data.median_rent_mxn;
+      }
       devFinancials = financialsResult;
       mlEstimates = mlEstimatesResult;
+      if (airdnaResult) {
+        airdnaOccupancy = airdnaResult.current_occupancy;
+      }
     }
   } catch {
     // Rental/financial data not available
@@ -448,6 +455,8 @@ export default async function DesarrolloDetailPage({ params }: { params: Promise
                     ? Math.round(rentalPerM2 * representativeArea)
                     : rentalMedian
                 }
+                estimatedRentVac={rentalMedianVac}
+                airdnaOccupancy={airdnaOccupancy}
               />
             )}
 

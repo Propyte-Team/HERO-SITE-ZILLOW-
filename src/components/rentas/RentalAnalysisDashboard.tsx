@@ -9,6 +9,7 @@ import {
   Database, Clock, ChevronRight, Info,
 } from 'lucide-react';
 import { formatPrice, formatPercentage } from '@/lib/formatters';
+import { CITY_TO_AIRDNA } from '@/lib/calculator';
 
 // ── Types ────────────────────────────────────────────
 interface Comparable {
@@ -255,6 +256,9 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortKey>('rent_yield_gross');
   const [showFilters, setShowFilters] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [airdnaData, setAirdnaData] = useState<any>(null);
+  const [airdnaLoading, setAirdnaLoading] = useState(false);
 
   const [filters, setFilters] = useState<Filters>({
     city: '',
@@ -281,6 +285,21 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
     }
     fetchData();
   }, []);
+
+  // Fetch AirDNA data when city filter changes
+  useEffect(() => {
+    const city = filters.city;
+    if (!city || !CITY_TO_AIRDNA[city]) {
+      setAirdnaData(null);
+      return;
+    }
+    setAirdnaLoading(true);
+    fetch(`/api/airdna-market?city=${encodeURIComponent(city)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setAirdnaData(d?.summary || null))
+      .catch(() => setAirdnaData(null))
+      .finally(() => setAirdnaLoading(false));
+  }, [filters.city]);
 
   // ── Normalize zones + price bounds safety net ──
   type ComparableWithZone = Comparable & { normalizedZone: string | null };
@@ -737,6 +756,111 @@ export default function RentalAnalysisDashboard({ locale }: { locale: string }) 
               onSelect={key => setFilters(f => ({ ...f, bedrooms: f.bedrooms === key ? '' : key }))}
               formatKey={k => k === 'N/A' ? 'N/A' : `${k} rec`}
             />
+          </div>
+        </section>
+      )}
+
+      {/* AirDNA Market Section */}
+      {airdnaData && filters.city && (
+        <section className="max-w-[1280px] mx-auto px-4 md:px-6 mt-8">
+          <div className="bg-[#0F1923] rounded-2xl p-6 md:p-8 text-white">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className="text-lg font-semibold">Mercado Vacacional — {filters.city}</h3>
+              <span className="px-2 py-0.5 bg-[#5CE0D2]/20 text-[#5CE0D2] text-[9px] font-bold rounded-full uppercase tracking-wider">AirDNA</span>
+            </div>
+
+            {/* Key metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {airdnaData.current_occupancy != null && (
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-[#5CE0D2]">{Math.round(airdnaData.current_occupancy)}%</div>
+                  <div className="text-xs text-gray-400 mt-1">Ocupación actual</div>
+                </div>
+              )}
+              {airdnaData.avg_occupancy_12m != null && (
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{Math.round(airdnaData.avg_occupancy_12m)}%</div>
+                  <div className="text-xs text-gray-400 mt-1">Prom. 12 meses</div>
+                </div>
+              )}
+              {airdnaData.current_adr != null && (
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-white">${airdnaData.current_adr.toLocaleString()}</div>
+                  <div className="text-xs text-gray-400 mt-1">ADR/noche</div>
+                </div>
+              )}
+              {airdnaData.active_listings != null && (
+                <div className="bg-white/5 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{airdnaData.active_listings.toLocaleString()}</div>
+                  <div className="text-xs text-gray-400 mt-1">Listings activos</div>
+                </div>
+              )}
+            </div>
+
+            {/* ADR by bedrooms */}
+            {airdnaData.adr_by_beds && Object.keys(airdnaData.adr_by_beds).length > 0 && (
+              <div className="mb-6">
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Tarifa diaria por recámaras</div>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                  {Object.entries(airdnaData.adr_by_beds as Record<string, number>)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([key, value]) => (
+                      <div key={key} className="bg-white/5 rounded-lg p-2 text-center">
+                        <div className="text-sm font-bold text-white">${value.toLocaleString()}</div>
+                        <div className="text-[10px] text-gray-500">{key.replace('_', ' ')}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rate tiers */}
+            {airdnaData.rate_tiers && Object.keys(airdnaData.rate_tiers).length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Segmentos de mercado</div>
+                <div className="flex flex-wrap gap-2">
+                  {['budget', 'economy', 'midscale', 'upscale', 'luxury']
+                    .filter(t => airdnaData.rate_tiers[t])
+                    .map(tier => (
+                      <span key={tier} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-xs">
+                        <span className="text-gray-400 capitalize">{tier}</span>
+                        <span className="font-bold text-white">${(airdnaData.rate_tiers[tier] as number).toLocaleString()}</span>
+                      </span>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Occupancy trend */}
+            {airdnaData.occupancy_trend && airdnaData.occupancy_trend.length > 2 && (
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wider mb-3">Ocupación últimos meses</div>
+                <div className="flex items-end gap-1 h-16">
+                  {(airdnaData.occupancy_trend as Array<{date: string; value: number}>).map((point, i) => {
+                    const maxVal = Math.max(...(airdnaData.occupancy_trend as Array<{value: number}>).map((p: {value: number}) => p.value));
+                    const height = maxVal > 0 ? (point.value / maxVal) * 100 : 0;
+                    const month = new Date(point.date).toLocaleDateString('es-MX', { month: 'short' });
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="text-[9px] text-gray-500">{Math.round(point.value)}%</div>
+                        <div
+                          className="w-full bg-[#5CE0D2]/60 rounded-t"
+                          style={{ height: `${Math.max(height, 5)}%` }}
+                          title={`${month}: ${Math.round(point.value)}%`}
+                        />
+                        <div className="text-[8px] text-gray-600">{month}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {airdnaData.latest_date && (
+              <p className="text-[10px] text-gray-500 mt-4">
+                Fuente: AirDNA · Datos al {new Date(airdnaData.latest_date).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}
+              </p>
+            )}
           </div>
         </section>
       )}
