@@ -708,6 +708,265 @@ function getWeeksAgo(weeks: number): Date {
 }
 
 // ============================================================
+// ANALYTICS: ZONE SCORES
+// ============================================================
+
+export interface ZoneScore {
+  id: number;
+  city: string;
+  zone: string;
+  score: number | null;
+  yield_component: number | null;
+  occupancy_component: number | null;
+  adr_growth_component: number | null;
+  supply_pressure_component: number | null;
+  revpar: number | null;
+  price_to_rent_ratio: number | null;
+  yield_spread: number | null;
+  supply_demand_ratio: number | null;
+  active_listings: number | null;
+  median_adr: number | null;
+  median_occupancy: number | null;
+  median_rent: number | null;
+  cluster_label: string | null;
+  computed_at: string;
+}
+
+export async function getZoneScores(client: Client, city?: string) {
+  let query = client
+    .from('zone_scores')
+    .select('*')
+    .order('computed_at', { ascending: false });
+
+  if (city) query = query.eq('city', city);
+
+  // Get latest snapshot: deduplicate by zone
+  const { data, error } = await query.limit(200);
+  if (error || !data) return [];
+
+  // Keep only latest per (city, zone)
+  const seen = new Set<string>();
+  return data.filter((row: ZoneScore) => {
+    const key = `${row.city}:${row.zone}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }) as ZoneScore[];
+}
+
+export async function getZoneDetail(client: Client, city: string, zone: string) {
+  // Zone score
+  const { data: scoreData } = await client
+    .from('zone_scores')
+    .select('*')
+    .eq('city', city)
+    .eq('zone', zone)
+    .order('computed_at', { ascending: false })
+    .limit(1);
+
+  const score = scoreData?.[0] || null;
+
+  // Get zone's submarket code for AirDNA lookups
+  const submarkets = AIRDNA_SUBMARKET_TO_ZONE;
+  const zoneSubmarkets = Object.entries(submarkets)
+    .filter(([, z]) => z === zone)
+    .map(([sub]) => sub);
+
+  return { score, submarkets: zoneSubmarkets };
+}
+
+// ============================================================
+// ANALYTICS: FORECASTS
+// ============================================================
+
+export interface MetricForecast {
+  market: string;
+  submarket: string | null;
+  metric_name: string;
+  forecast_date: string;
+  predicted_value: number | null;
+  ci_lower: number | null;
+  ci_upper: number | null;
+  model_type: string | null;
+}
+
+export async function getForecasts(
+  client: Client,
+  market: string,
+  submarket?: string | null,
+  metricName?: string,
+): Promise<MetricForecast[]> {
+  let query = client
+    .from('metric_forecasts')
+    .select('*')
+    .eq('market', market)
+    .order('forecast_date', { ascending: true });
+
+  if (submarket) {
+    query = query.eq('submarket', submarket);
+  } else {
+    query = query.is('submarket', null);
+  }
+  if (metricName) query = query.eq('metric_name', metricName);
+
+  const { data } = await query.limit(100);
+  return (data || []) as MetricForecast[];
+}
+
+// ============================================================
+// ANALYTICS: SEASONAL INDICES
+// ============================================================
+
+export interface SeasonalIndex {
+  market: string;
+  submarket: string | null;
+  metric_name: string;
+  month: number;
+  seasonal_factor: number;
+}
+
+export async function getSeasonalIndices(
+  client: Client,
+  market: string,
+  submarket?: string | null,
+  metricName?: string,
+): Promise<SeasonalIndex[]> {
+  let query = client
+    .from('seasonal_indices')
+    .select('market,submarket,metric_name,month,seasonal_factor')
+    .eq('market', market)
+    .order('month', { ascending: true });
+
+  if (submarket) {
+    query = query.eq('submarket', submarket);
+  } else {
+    query = query.is('submarket', null);
+  }
+  if (metricName) query = query.eq('metric_name', metricName);
+
+  const { data } = await query.limit(100);
+  return (data || []) as SeasonalIndex[];
+}
+
+// ============================================================
+// ANALYTICS: MARKET ALERTS
+// ============================================================
+
+export interface MarketAlert {
+  id: number;
+  alert_type: string;
+  city: string | null;
+  zone: string | null;
+  market: string | null;
+  metric_name: string | null;
+  current_value: number | null;
+  expected_value: number | null;
+  deviation_pct: number | null;
+  severity: string;
+  message: string | null;
+  detected_at: string;
+  resolved_at: string | null;
+}
+
+export async function getActiveAlerts(
+  client: Client,
+  city?: string,
+  severity?: string,
+): Promise<MarketAlert[]> {
+  let query = client
+    .from('market_alerts')
+    .select('*')
+    .is('resolved_at', null)
+    .order('detected_at', { ascending: false });
+
+  if (city) query = query.eq('city', city);
+  if (severity) query = query.eq('severity', severity);
+
+  const { data } = await query.limit(50);
+  return (data || []) as MarketAlert[];
+}
+
+// ============================================================
+// ANALYTICS: OCCUPANCY TREND (extended for charts)
+// ============================================================
+
+export async function getOccupancyTrend(
+  client: Client,
+  market: string,
+  submarket?: string | null,
+  months = 24,
+): Promise<Array<{ date: string; value: number }>> {
+  let query = client
+    .from('airdna_metrics')
+    .select('metric_date, metric_value')
+    .eq('market', market)
+    .eq('section', 'occupancy')
+    .eq('chart', 'chart_1')
+    .eq('metric_name', 'occupancy')
+    .order('metric_date', { ascending: true })
+    .limit(months);
+
+  if (submarket) {
+    query = query.eq('submarket', submarket);
+  } else {
+    query = query.is('submarket', null);
+  }
+
+  const { data } = await query;
+  if (!data) return [];
+
+  const seen = new Set<string>();
+  return data
+    .filter((r: { metric_date: string; metric_value: number | null }) => {
+      if (r.metric_value == null || seen.has(r.metric_date)) return false;
+      seen.add(r.metric_date);
+      return true;
+    })
+    .map((r: { metric_date: string; metric_value: number }) => ({
+      date: r.metric_date,
+      value: r.metric_value,
+    }));
+}
+
+export async function getADRTrend(
+  client: Client,
+  market: string,
+  submarket?: string | null,
+  months = 24,
+): Promise<Array<{ date: string; value: number }>> {
+  let query = client
+    .from('airdna_metrics')
+    .select('metric_date, metric_value')
+    .eq('market', market)
+    .eq('section', 'rates')
+    .eq('chart', 'chart_1')
+    .eq('metric_name', 'daily_rate')
+    .order('metric_date', { ascending: true })
+    .limit(months);
+
+  if (submarket) {
+    query = query.eq('submarket', submarket);
+  } else {
+    query = query.is('submarket', null);
+  }
+
+  const { data } = await query;
+  if (!data) return [];
+
+  const seen = new Set<string>();
+  return data
+    .filter((r: { metric_date: string; metric_value: number | null }) => {
+      if (r.metric_value == null || seen.has(r.metric_date)) return false;
+      seen.add(r.metric_date);
+      return true;
+    })
+    .map((r: { metric_date: string; metric_value: number }) => ({
+      date: r.metric_date,
+      value: Math.round(r.metric_value),
+    }));
+}
+
+// ============================================================
 // BACKWARD COMPAT: old function names mapping to new
 // ============================================================
 

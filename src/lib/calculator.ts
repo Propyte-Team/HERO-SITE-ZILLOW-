@@ -71,6 +71,55 @@ for (const [sub, zone] of Object.entries(AIRDNA_SUBMARKET_TO_ZONE)) {
   ZONE_TO_AIRDNA_SUBMARKETS[zone].push(sub);
 }
 
+// ── RevPAR & Seasonal Returns ──
+
+/**
+ * Revenue Per Available Room (night equivalent).
+ * RevPAR = ADR × Occupancy Rate
+ */
+export function calculateRevPAR(adr: number, occupancyRate: number): number {
+  return Math.round(adr * occupancyRate);
+}
+
+/**
+ * Calculate seasonal-weighted annual return using monthly occupancy factors.
+ * seasonalFactors: array of 12 multiplicative factors (Jan=index 0).
+ * Base occupancy is multiplied by each factor to get per-month occupancy.
+ */
+export function calculateSeasonalReturn(
+  monthlyRent: number,
+  baseOccupancy: number,
+  seasonalFactors: number[],
+  expenseRatio: number = VAC.EXPENSE_RATIO,
+  platformFee: number = VAC.PLATFORM_FEE,
+  mgmtFee: number = VAC.MGMT_FEE,
+): { annualGross: number; annualNet: number; monthlyBreakdown: number[] } {
+  const totalCostRatio = expenseRatio + platformFee + mgmtFee;
+  const factors = seasonalFactors.length === 12 ? seasonalFactors : Array(12).fill(1.0);
+
+  const monthlyBreakdown = factors.map((factor) => {
+    const monthOcc = Math.min(1.0, baseOccupancy * factor);
+    const gross = monthlyRent * monthOcc;
+    return Math.round(gross * (1 - totalCostRatio));
+  });
+
+  const annualNet = monthlyBreakdown.reduce((sum, m) => sum + m, 0);
+  const annualGross = factors.reduce((sum, factor) => {
+    return sum + monthlyRent * Math.min(1.0, baseOccupancy * factor);
+  }, 0);
+
+  return { annualGross: Math.round(annualGross), annualNet, monthlyBreakdown };
+}
+
+/**
+ * Price-to-Rent Ratio = Sale Price / (Monthly Rent × 12).
+ * Lower = better for investors.
+ */
+export function calculatePriceToRentRatio(salePrice: number, monthlyRent: number): number {
+  if (monthlyRent <= 0) return Infinity;
+  return Math.round((salePrice / (monthlyRent * 12)) * 10) / 10;
+}
+
 // ── Vacation rental calculators ──
 
 export function calculateVacEffectiveRent(monthlyRent: number, occupancy: number): number {

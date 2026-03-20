@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 // TODO: Habilitar 'rentar' cuando haya inventario de renta
@@ -96,6 +96,17 @@ export default function Hero() {
               </button>
             </div>
           </form>
+        </div>
+
+        {/* AI Search CTA */}
+        <div className="flex justify-center mt-4">
+          <Link
+            href={`/${locale}/buscar`}
+            className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm border border-white/20 transition-all group"
+          >
+            <Sparkles size={16} className="text-[#99FFFF] group-hover:animate-pulse" />
+            {locale === 'es' ? 'Buscar con IA' : 'AI Search'}
+          </Link>
         </div>
 
         {/* Quick links */}

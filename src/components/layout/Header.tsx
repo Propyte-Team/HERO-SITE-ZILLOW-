@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { Menu, ChevronDown, User } from 'lucide-react';
+import { Menu, ChevronDown, User, Sparkles } from 'lucide-react';
 import Logo from './Logo';
 import LanguageToggle from './LanguageToggle';
 import MobileMenu from './MobileMenu';
@@ -35,9 +35,12 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const tAi = useTranslations('aiSearch');
+
   const mainLinks = [
     { href: `/${locale}/propiedades`, label: t('properties') },
     { href: `/${locale}/propiedades?stage=preventa`, label: t('presale') },
+    { href: `/${locale}/buscar`, label: tAi('navLabel'), icon: Sparkles },
     { href: `/${locale}/rentas`, label: t('rentalAnalysis') },
     { href: `/${locale}/nosotros/quienes-somos`, label: locale === 'es' ? 'Nosotros' : 'About' },
     { href: `/${locale}/contacto`, label: t('contact') },
@@ -64,7 +67,8 @@ export default function Header() {
 
               <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
                 {mainLinks.map(link => (
-                  <Link key={link.href} href={link.href} className={linkClass}>
+                  <Link key={link.href} href={link.href} className={`${linkClass} ${link.icon ? 'flex items-center gap-1' : ''}`}>
+                    {link.icon && <link.icon size={14} className="text-[#00B4C8]" />}
                     {link.label}
                   </Link>
                 ))}

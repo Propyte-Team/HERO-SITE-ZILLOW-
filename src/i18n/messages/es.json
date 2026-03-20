@@ -829,5 +829,26 @@
     "today": "hoy",
     "methodology": "Metodología",
     "methodologyBody": "Los datos se recopilan de portales inmobiliarios como Airbnb, Inmuebles24 y Mercado Libre mediante scrapers automatizados. Las métricas (mediana, P25, P75, renta/m²) se calculan en tiempo real sobre los comparables filtrados. El modelo ML entrena sobre estos datos para generar estimaciones por desarrollo. Los datos se actualizan semanalmente."
+  },
+  "aiSearch": {
+    "metaTitle": "Buscar con IA | Propyte",
+    "metaDescription": "Encuentra tu propiedad ideal en la Riviera Maya con nuestro asistente de inteligencia artificial. Búsqueda conversacional por voz o texto.",
+    "title": "Kai",
+    "subtitle": "Tu asistente inmobiliario",
+    "clickToWrite": "escríbele a {name}",
+    "placeholder": "Escribe o habla para buscar...",
+    "listening": "Escuchando...",
+    "thinking": "Analizando tu búsqueda...",
+    "voiceUnsupported": "Tu navegador no soporta búsqueda por voz",
+    "suggestion1": "Departamentos en Playa del Carmen",
+    "suggestion2": "Quiero invertir en Tulum",
+    "suggestion3": "Casas menos de $5M",
+    "suggestion4": "¿Es buen momento para comprar?",
+    "redirecting": "Te llevo a los resultados...",
+    "errorGeneric": "Algo salió mal. Intenta de nuevo.",
+    "poweredBy": "Potenciado por IA",
+    "back": "Inicio",
+    "newSearch": "Nueva búsqueda",
+    "navLabel": "Buscar con IA"
   }
 }

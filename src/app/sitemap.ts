@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 const BASE_URL = 'https://propyte.com';
 const LOCALES = ['es', 'en'];
@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/nosotros/estructura', priority: 0.6, changeFrequency: 'monthly' as const },
     { path: '/nosotros/equipo-comercial', priority: 0.7, changeFrequency: 'monthly' as const },
     { path: '/contacto', priority: 0.6, changeFrequency: 'monthly' as const },
+    { path: '/buscar', priority: 0.8, changeFrequency: 'weekly' as const },
   ];
 
   for (const page of staticPages) {
@@ -47,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ── Dynamic development pages ────────
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServiceRoleClient() || await createServerSupabaseClient();
     const { data: developments } = await supabase
       .from('developments')
       .select('slug, updated_at')

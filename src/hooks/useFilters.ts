@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Property, PropertyStage, PropertyUsage } from '@/types/property';
 
 export interface Filters {
@@ -25,8 +26,54 @@ const defaultFilters: Filters = {
   usage: '',
 };
 
+const VALID_STAGES: PropertyStage[] = ['preventa', 'construccion', 'entrega_inmediata'];
+const VALID_USAGES: PropertyUsage[] = ['residencial', 'vacacional', 'renta', 'mixto'];
+
+function parseFiltersFromParams(params: URLSearchParams): Partial<Filters> {
+  const parsed: Partial<Filters> = {};
+
+  const search = params.get('search');
+  if (search) parsed.search = search;
+
+  const city = params.get('city');
+  if (city) parsed.city = city;
+
+  const type = params.get('type');
+  if (type) parsed.type = type;
+
+  const priceMin = params.get('priceMin');
+  if (priceMin) { const n = Number(priceMin); if (n > 0) parsed.priceMin = n; }
+
+  const priceMax = params.get('priceMax');
+  if (priceMax) { const n = Number(priceMax); if (n > 0 && n < 50_000_000) parsed.priceMax = n; }
+
+  const roiMin = params.get('roiMin');
+  if (roiMin) { const n = Number(roiMin); if (n > 0) parsed.roiMin = n; }
+
+  const stage = params.get('stage');
+  if (stage && VALID_STAGES.includes(stage as PropertyStage)) parsed.stage = stage as PropertyStage;
+
+  const usage = params.get('usage');
+  if (usage && VALID_USAGES.includes(usage as PropertyUsage)) parsed.usage = usage as PropertyUsage;
+
+  return parsed;
+}
+
 export function useFilters(properties: Property[]) {
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const searchParams = useSearchParams();
+
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...defaultFilters,
+    ...parseFiltersFromParams(searchParams),
+  }));
+
+  // Re-apply URL params if they change (e.g. AI redirect)
+  useEffect(() => {
+    const fromUrl = parseFiltersFromParams(searchParams);
+    if (Object.keys(fromUrl).length > 0) {
+      setFilters(prev => ({ ...prev, ...fromUrl }));
+    }
+  }, [searchParams]);
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'roi' | 'date'>('relevance');
 
   const updateFilter = useCallback(<K extends keyof Filters>(key: K, value: Filters[K]) => {

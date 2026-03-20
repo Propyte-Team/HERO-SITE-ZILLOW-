@@ -829,5 +829,26 @@
     "today": "today",
     "methodology": "Methodology",
     "methodologyBody": "Data is collected from real estate portals like Airbnb, Inmuebles24, and Mercado Libre via automated scrapers. Metrics (median, P25, P75, rent/m²) are computed in real time on filtered comparables. The ML model trains on this data to generate per-development estimates. Data is updated weekly."
+  },
+  "aiSearch": {
+    "metaTitle": "AI Search | Propyte",
+    "metaDescription": "Find your ideal property in the Riviera Maya with our AI-powered assistant. Conversational search by voice or text.",
+    "title": "Kai",
+    "subtitle": "Your real estate assistant",
+    "clickToWrite": "write to {name}",
+    "placeholder": "Type or speak to search...",
+    "listening": "Listening...",
+    "thinking": "Analyzing your search...",
+    "voiceUnsupported": "Your browser doesn't support voice search",
+    "suggestion1": "Apartments in Playa del Carmen",
+    "suggestion2": "I want to invest in Tulum",
+    "suggestion3": "Houses under $5M",
+    "suggestion4": "Is it a good time to buy?",
+    "redirecting": "Taking you to results...",
+    "errorGeneric": "Something went wrong. Try again.",
+    "poweredBy": "Powered by AI",
+    "back": "Home",
+    "newSearch": "New search",
+    "navLabel": "AI Search"
   }
 }
