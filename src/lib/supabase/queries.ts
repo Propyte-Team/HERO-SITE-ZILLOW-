@@ -741,7 +741,7 @@ export async function getZoneScores(client: Client, city?: string) {
   if (city) query = query.eq('city', city);
 
   // Get latest snapshot: deduplicate by zone
-  const { data, error } = await query.limit(200);
+  const { data, error } = await query.limit(2000);
   if (error || !data) return [];
 
   // Keep only latest per (city, zone)
