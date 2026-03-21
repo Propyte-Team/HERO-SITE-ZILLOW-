@@ -26,6 +26,9 @@ const UNIQUE_ZONES = ZONE_CONFIGS.reduce((acc, z) => {
   return acc;
 }, [] as typeof ZONE_CONFIGS);
 
+// Force dynamic rendering — SSG can't access cookies() needed by Supabase client
+export const dynamic = 'force-dynamic';
+
 export async function generateStaticParams() {
   return UNIQUE_ZONES.map((z) => ({ slug: z.slug }));
 }
