@@ -7,7 +7,7 @@ type Locale = 'es' | 'en';
 interface TextToSpeechHook {
   isSpeaking: boolean;
   isSupported: boolean;
-  speak: (text: string) => void;
+  speak: (text: string) => Promise<void>;
   stop: () => void;
 }
 
@@ -15,6 +15,13 @@ const VOICE_LANG_MAP: Record<Locale, { preferred: string; fallbackPrefix: string
   es: { preferred: 'es-MX', fallbackPrefix: 'es' },
   en: { preferred: 'en-US', fallbackPrefix: 'en' },
 };
+
+const RATE_MAP: Record<Locale, number> = {
+  es: 0.85,
+  en: 0.88,
+};
+
+const PAUSE_BETWEEN_SENTENCES_MS = 300;
 
 /**
  * Picks the best available voice for the given locale.
@@ -31,7 +38,6 @@ function pickVoice(voices: SpeechSynthesisVoice[], locale: Locale): SpeechSynthe
     (v) => v.lang.startsWith(fallbackPrefix) && v.lang !== preferred,
   );
 
-  // Prefer female voices within a tier — many engines include "female" or "mujer" in the name.
   const preferFemale = (list: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined => {
     const femaleKeywords = /female|mujer|femenin|woman/i;
     return list.find((v) => femaleKeywords.test(v.name)) ?? list[0];
@@ -40,16 +46,27 @@ function pickVoice(voices: SpeechSynthesisVoice[], locale: Locale): SpeechSynthe
   if (exactMatches.length > 0) return preferFemale(exactMatches) ?? exactMatches[0];
   if (regionMatches.length > 0) return preferFemale(regionMatches) ?? regionMatches[0];
 
-  // Last resort: any voice matching the prefix loosely
   const anyMatch = voices.find((v) => v.lang.toLowerCase().startsWith(fallbackPrefix));
   if (anyMatch) return anyMatch;
 
   return null;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Splits text into sentences at punctuation boundaries.
+ */
+function splitSentences(text: string): string[] {
+  const parts = text.match(/[^.!?;]+[.!?;]?/g);
+  return (parts || [text]).map((s) => s.trim()).filter(Boolean);
+}
+
 export function useTextToSpeech(locale: Locale = 'es'): TextToSpeechHook {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const cancelledRef = useRef(false);
   const voicesLoadedRef = useRef(false);
 
   const isSupported =
@@ -57,7 +74,6 @@ export function useTextToSpeech(locale: Locale = 'es'): TextToSpeechHook {
     typeof window.speechSynthesis !== 'undefined';
 
   // Voices are loaded asynchronously in some browsers.
-  // We eagerly trigger the load so they are ready when speak() is called.
   useEffect(() => {
     if (!isSupported) return;
 
@@ -65,10 +81,8 @@ export function useTextToSpeech(locale: Locale = 'es'): TextToSpeechHook {
       voicesLoadedRef.current = true;
     };
 
-    // Some browsers (Chrome) fire voiceschanged, others (Safari) return voices immediately.
     speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
 
-    // Trigger initial load
     const voices = speechSynthesis.getVoices();
     if (voices.length > 0) {
       voicesLoadedRef.current = true;
@@ -79,54 +93,92 @@ export function useTextToSpeech(locale: Locale = 'es'): TextToSpeechHook {
     };
   }, [isSupported]);
 
-  const stop = useCallback(() => {
-    if (!isSupported) return;
-    speechSynthesis.cancel();
-    utteranceRef.current = null;
-    setIsSpeaking(false);
-  }, [isSupported]);
+  /**
+   * Speaks a single sentence and returns a Promise that resolves when done.
+   * Includes a timeout fallback for browsers where onend doesn't fire.
+   */
+  const speakSentence = useCallback(
+    (text: string): Promise<void> => {
+      return new Promise((resolve) => {
+        if (!isSupported || cancelledRef.current) {
+          resolve();
+          return;
+        }
 
-  const speak = useCallback(
-    (text: string) => {
-      if (!isSupported || !text.trim()) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = RATE_MAP[locale];
+        utterance.pitch = 1.0;
 
-      // Cancel any ongoing speech before starting a new one
-      speechSynthesis.cancel();
+        const voices = speechSynthesis.getVoices();
+        const voice = pickVoice(voices, locale);
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = voice.lang;
+        } else {
+          utterance.lang = VOICE_LANG_MAP[locale].preferred;
+        }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
+        // Timeout fallback: rough estimate of speech duration
+        const timeoutMs = Math.max(3000, text.length * 80);
+        const timeout = setTimeout(() => {
+          resolve();
+        }, timeoutMs);
 
-      const voices = speechSynthesis.getVoices();
-      const voice = pickVoice(voices, locale);
-      if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
-      } else {
-        // Fall back to BCP-47 tag so the engine picks its default for the locale
-        utterance.lang = VOICE_LANG_MAP[locale].preferred;
-      }
+        utterance.onend = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+        utterance.onerror = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        utteranceRef.current = null;
-      };
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        utteranceRef.current = null;
-      };
-
-      utteranceRef.current = utterance;
-      speechSynthesis.speak(utterance);
+        speechSynthesis.speak(utterance);
+      });
     },
     [isSupported, locale],
   );
 
-  // Cleanup on unmount — stop any ongoing speech
+  const stop = useCallback(() => {
+    if (!isSupported) return;
+    cancelledRef.current = true;
+    speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }, [isSupported]);
+
+  const speak = useCallback(
+    async (text: string): Promise<void> => {
+      if (!isSupported || !text.trim()) return;
+
+      // Cancel any ongoing speech before starting
+      speechSynthesis.cancel();
+      cancelledRef.current = false;
+
+      const sentences = splitSentences(text);
+
+      setIsSpeaking(true);
+
+      for (let i = 0; i < sentences.length; i++) {
+        if (cancelledRef.current) break;
+
+        await speakSentence(sentences[i]);
+
+        // Pause between sentences (not after the last one)
+        if (i < sentences.length - 1 && !cancelledRef.current) {
+          await delay(PAUSE_BETWEEN_SENTENCES_MS);
+        }
+      }
+
+      setIsSpeaking(false);
+    },
+    [isSupported, speakSentence],
+  );
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (isSupported) {
+        cancelledRef.current = true;
         speechSynthesis.cancel();
       }
     };

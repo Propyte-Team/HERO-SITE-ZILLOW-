@@ -12,6 +12,8 @@ interface UseAiSearchReturn {
   error: string | null;
   sendMessage: (text: string) => Promise<void>;
   reset: () => void;
+  pendingRedirect: string | null;
+  executePendingRedirect: () => void;
 }
 
 function filtersToSearchParams(filters: SearchFilters): string {
@@ -35,6 +37,7 @@ export function useAiSearch(): UseAiSearchReturn {
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sendMessage = useCallback(async (text: string) => {
@@ -90,11 +93,9 @@ export function useAiSearch(): UseAiSearchReturn {
       // Handle state transitions based on response type
       if (data.type === 'redirect' && data.filters) {
         setOrbState('success');
-        // Navigate to marketplace with filters after delay
-        redirectTimerRef.current = setTimeout(() => {
-          const params = filtersToSearchParams(data.filters!);
-          router.push(`/${locale}/propiedades${params ? '?' + params : ''}`);
-        }, 2000);
+        // Store redirect URL — the page component will navigate after speech ends
+        const params = filtersToSearchParams(data.filters);
+        setPendingRedirect(`/${locale}/propiedades${params ? '?' + params : ''}`);
       } else {
         setOrbState('speaking');
         // Return to idle after "speaking" animation
@@ -107,7 +108,14 @@ export function useAiSearch(): UseAiSearchReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, locale, router]);
+  }, [messages, isLoading, locale]);
+
+  const executePendingRedirect = useCallback(() => {
+    if (pendingRedirect) {
+      router.push(pendingRedirect);
+      setPendingRedirect(null);
+    }
+  }, [pendingRedirect, router]);
 
   const reset = useCallback(() => {
     if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
@@ -115,7 +123,8 @@ export function useAiSearch(): UseAiSearchReturn {
     setOrbState('idle');
     setIsLoading(false);
     setError(null);
+    setPendingRedirect(null);
   }, []);
 
-  return { messages, orbState, isLoading, error, sendMessage, reset };
+  return { messages, orbState, isLoading, error, sendMessage, reset, pendingRedirect, executePendingRedirect };
 }
