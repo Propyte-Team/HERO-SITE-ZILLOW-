@@ -360,6 +360,11 @@ export async function getRentalEstimate(
   }
   attempts.push({ filter: { city, rental_type: rentalType }, isFallback: true });
 
+  // Data cleaning bounds (mirrors Python pipeline)
+  const AREA_MIN = 15;
+  const AREA_MAX = 800;
+  const RENT_PER_M2_MAX = 2000;
+
   for (const attempt of attempts) {
     let query = client
       .from('rental_comparables')
@@ -377,9 +382,32 @@ export async function getRentalEstimate(
     const { data } = await query.order('monthly_rent_mxn', { ascending: true });
 
     if (data && data.length >= MIN_SAMPLE) {
-      const prices = data.map((d: { monthly_rent_mxn: number }) => d.monthly_rent_mxn).sort((a: number, b: number) => a - b);
-      const areas = data
-        .filter((d: { area_m2: number | null }) => d.area_m2 && d.area_m2 > 0)
+      // Clean: filter invalid areas and extreme rent/m² before computing stats
+      const cleaned = data.filter((d: { monthly_rent_mxn: number; area_m2: number | null }) => {
+        if (d.area_m2 != null && d.area_m2 > 0) {
+          if (d.area_m2 < AREA_MIN || d.area_m2 > AREA_MAX) return false;
+          const rpm2 = d.monthly_rent_mxn / d.area_m2;
+          if (rpm2 > RENT_PER_M2_MAX) return false;
+        }
+        return true;
+      });
+      if (cleaned.length < MIN_SAMPLE) continue;
+
+      // IQR outlier removal within this group
+      const allRents = cleaned.map((d: { monthly_rent_mxn: number }) => d.monthly_rent_mxn).sort((a: number, b: number) => a - b);
+      const q1 = allRents[Math.floor(allRents.length * 0.25)];
+      const q3 = allRents[Math.floor(allRents.length * 0.75)];
+      const iqr = q3 - q1;
+      const lower = q1 - 2.5 * iqr;
+      const upper = q3 + 2.5 * iqr;
+      const filtered = iqr > 0
+        ? cleaned.filter((d: { monthly_rent_mxn: number }) => d.monthly_rent_mxn >= lower && d.monthly_rent_mxn <= upper)
+        : cleaned;
+      if (filtered.length < MIN_SAMPLE) continue;
+
+      const prices = filtered.map((d: { monthly_rent_mxn: number }) => d.monthly_rent_mxn).sort((a: number, b: number) => a - b);
+      const areas = filtered
+        .filter((d: { area_m2: number | null }) => d.area_m2 && d.area_m2 >= AREA_MIN)
         .map((d: { area_m2: number; monthly_rent_mxn: number }) => d.monthly_rent_mxn / d.area_m2);
 
       const median = prices[Math.floor(prices.length / 2)];
