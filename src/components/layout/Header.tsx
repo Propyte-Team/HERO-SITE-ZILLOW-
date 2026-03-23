@@ -37,12 +37,13 @@ export default function Header() {
 
   const tAi = useTranslations('aiSearch');
 
+  const tMercado = useTranslations('mercado');
+
   const mainLinks = [
     { href: `/${locale}/propiedades`, label: t('properties') },
     { href: `/${locale}/propiedades?stage=preventa`, label: t('presale') },
     { href: `/${locale}/buscar`, label: tAi('navLabel'), icon: Sparkles },
-    { href: `/${locale}/rentas`, label: t('rentalAnalysis') },
-    { href: `/${locale}/zonas`, label: locale === 'es' ? 'Zonas' : 'Zones' },
+    { href: `/${locale}/mercado`, label: tMercado('navLabel') },
     { href: `/${locale}/nosotros/quienes-somos`, label: locale === 'es' ? 'Nosotros' : 'About' },
     { href: `/${locale}/contacto`, label: t('contact') },
   ];
